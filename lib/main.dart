@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:project_flutter/Order.dart';
-import 'package:project_flutter/DetailListing.dart';
+import 'package:project_flutter/HomePage/DetailListing.dart';
 import 'package:project_flutter/Models/ProductDetailModel.dart';
-import 'package:project_flutter/UserProfile.dart';
+import 'package:project_flutter/HomePage/UserProfile.dart';
 import 'package:project_flutter/Models/UserProfile.dart';
 import 'package:project_flutter/Models/Post.dart';
 import 'package:project_flutter/Models/Notification.dart';
-import 'package:project_flutter/Notification.dart';
+import 'package:project_flutter/HomePage/Notification.dart';
 
 void main() {
   runApp(const MyApp());
@@ -202,7 +201,7 @@ class _MainScreenState extends State<MainScreen> {
       });
       await Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => const OldieOrderScreen()),
+        MaterialPageRoute(builder: (_) => const OrderScreen()),
       );
 
       setState(() => _selectedIndex = 0);
@@ -858,5 +857,14 @@ class ChatListScreen extends StatelessWidget {
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('Tin nhắn')),
     body: const Center(child: Text('Danh sách chat')),
+  );
+}
+
+class OrderScreen extends StatelessWidget {
+  const OrderScreen({super.key});
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Đơn hàng')),
+    body: const Center(child: Text('Danh sách đơn hàng')),
   );
 }
