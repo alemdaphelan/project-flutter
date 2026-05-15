@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:project_flutter/Models/ProductDetailModel.dart';
+import 'package:project_flutter/features/HomePage/Models/ProductDetailModel.dart';
+import 'package:project_flutter/features/payment/screens/checkout_screen.dart';
 
 class ProductDetailScreen extends StatelessWidget {
   final ProductDetailModel product;
@@ -53,7 +54,7 @@ class ProductDetailScreen extends StatelessWidget {
           ],
         ),
       ),
-      bottomNavigationBar: _buildBottomActionBar(),
+      bottomNavigationBar: _buildBottomActionBar(context),
     );
   }
 
@@ -197,7 +198,7 @@ class ProductDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBottomActionBar() {
+  Widget _buildBottomActionBar(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -216,7 +217,12 @@ class ProductDetailScreen extends StatelessWidget {
             Expanded(
               flex: 3,
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const CheckoutScreen()),
+                  );
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryTeal,
                   foregroundColor: Colors.white,

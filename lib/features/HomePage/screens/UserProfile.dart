@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:project_flutter/Models/UserProfile.dart';
-import 'package:project_flutter/Models/Post.dart';
+import 'package:project_flutter/features/HomePage/Models/UserProfile.dart';
+import 'package:project_flutter/features/HomePage/Models/Post.dart';
 
 class ProfileScreen extends StatelessWidget {
   final UserProfileModel userProfile;

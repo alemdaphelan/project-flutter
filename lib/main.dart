@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:project_flutter/HomePage/DetailListing.dart';
-import 'package:project_flutter/Models/ProductDetailModel.dart';
-import 'package:project_flutter/HomePage/UserProfile.dart';
-import 'package:project_flutter/Models/UserProfile.dart';
-import 'package:project_flutter/Models/Post.dart';
-import 'package:project_flutter/Models/Notification.dart';
-import 'package:project_flutter/HomePage/Notification.dart';
+import 'package:project_flutter/features/HomePage/screens/DetailListing.dart';
+import 'package:project_flutter/features/HomePage/Models/ProductDetailModel.dart';
+import 'package:project_flutter/features/HomePage/screens/UserProfile.dart';
+import 'package:project_flutter/features/HomePage/Models/UserProfile.dart';
+import 'package:project_flutter/features/HomePage/Models/Post.dart';
+import 'package:project_flutter/features/HomePage/Models/Notification.dart';
+import 'package:project_flutter/features/HomePage/screens/Notification.dart';
+
+import 'package:project_flutter/features/payment/screens/checkout_screen.dart';
+import 'package:project_flutter/features/payment/screens/order_status_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -13,13 +16,17 @@ void main() {
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+
+  // Màu chủ đạo Teal mà bạn đã chọn cho module Thanh toán
+  static const Color oldieTeal = Color(0xFF1B6B60);
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Oldie App',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primaryColor: const Color(0xFF4C9A82),
+        primaryColor: oldieTeal,
         scaffoldBackgroundColor: const Color(0xFFF4F9F6),
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.white,
@@ -824,14 +831,6 @@ class CustomDrawer extends StatelessWidget {
   }
 }
 
-class CheckoutScreen extends StatelessWidget {
-  const CheckoutScreen({super.key});
-  @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Mua hàng')),
-    body: const Center(child: Text('Xác nhận mua hàng')),
-  );
-}
 
 class ChatDetailScreen extends StatelessWidget {
   const ChatDetailScreen({super.key});
