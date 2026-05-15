@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class OrderStatusScreen extends StatefulWidget {
   final bool isBuyer;
-  const OrderStatusScreen({super.key, this.isBuyer = false});
+  const OrderStatusScreen({super.key, this.isBuyer = true});
 
   @override
   State<OrderStatusScreen> createState() => _OrderStatusScreenState();

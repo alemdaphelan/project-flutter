@@ -2,19 +2,20 @@ import 'package:flutter/material.dart';
 import 'order_status_screen.dart';
 
 class PaymentMethodScreen extends StatefulWidget {
-  final String method; // Nhận "COD" hoặc "Bank" từ CheckoutScreen
+  final String method; 
+  final bool isBuyer; // 1. Thêm biến nhận trạng thái
 
-  const PaymentMethodScreen({super.key, required this.method});
+  // 2. Bắt buộc truyền vào Constructor
+  const PaymentMethodScreen({super.key, required this.method, required this.isBuyer});
 
   @override
   State<PaymentMethodScreen> createState() => _PaymentMethodScreenState();
 }
 
 class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
-  // Màu chủ đạo Oldie
   final Color primaryTeal = const Color(0xFF1B6B60);
 
-  final String myBankId = "970422"; // Ma BIN 970422 là MB
+  final String myBankId = "970422"; 
   final String myAccountNo = "0944649536";
   final String myAccountName = "HO NGOC PHUONG NHU";
   final int amount = 250000;
@@ -23,7 +24,6 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
   Widget build(BuildContext context) {
     bool isQR = widget.method == "Bank";
 
-    // Tạo link VietQR động
     String qrUrl =
         "https://img.vietqr.io/image/$myBankId-$myAccountNo-compact.png"
         "?amount=$amount"
@@ -57,24 +57,15 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
             if (isQR) ...[
               Text(
                 "QUÉT MÃ ĐỂ THANH TOÁN",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: primaryTeal,
-                  letterSpacing: 1.1,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryTeal, letterSpacing: 1.1),
               ),
               const SizedBox(height: 8),
               Text(
                 "Chủ tài khoản: $myAccountName",
-                style: TextStyle(
-                  color: Colors.grey.shade700,
-                  fontWeight: FontWeight.w500,
-                ),
+                style: TextStyle(color: Colors.grey.shade700, fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 30),
 
-              // Hiển thị mã QR với Shadow và Border Teal
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -82,11 +73,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                   border: Border.all(color: primaryTeal.withOpacity(0.2)),
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    ),
+                    BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, 10)),
                   ],
                 ),
                 child: ClipRRect(
@@ -98,13 +85,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                     fit: BoxFit.contain,
                     loadingBuilder: (context, child, progress) {
                       if (progress == null) return child;
-                      return SizedBox(
-                        width: 240,
-                        height: 240,
-                        child: Center(
-                          child: CircularProgressIndicator(color: primaryTeal),
-                        ),
-                      );
+                      return SizedBox(width: 240, height: 240, child: Center(child: CircularProgressIndicator(color: primaryTeal)));
                     },
                   ),
                 ),
@@ -113,37 +94,18 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
               const Text(
                 "Vui lòng nhấn xác nhận sau khi bạn đã chuyển khoản thành công",
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 13,
-                  fontStyle: FontStyle.italic,
-                ),
+                style: TextStyle(color: Colors.grey, fontSize: 13, fontStyle: FontStyle.italic),
               ),
               const SizedBox(height: 40),
               _buildConfirmButton(context, "XÁC NHẬN ĐÃ THANH TOÁN"),
             ] else ...[
-              // GIAO DIỆN THANH TOÁN COD
               Container(
                 padding: const EdgeInsets.all(30),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE8F1F0),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.delivery_dining_outlined,
-                  size: 80,
-                  color: primaryTeal,
-                ),
+                decoration: const BoxDecoration(color: Color(0xFFE8F1F0), shape: BoxShape.circle),
+                child: Icon(Icons.delivery_dining_outlined, size: 80, color: primaryTeal),
               ),
               const SizedBox(height: 30),
-              Text(
-                "THANH TOÁN KHI NHẬN HÀNG",
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: primaryTeal,
-                ),
-              ),
+              Text("THANH TOÁN KHI NHẬN HÀNG", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: primaryTeal)),
               const SizedBox(height: 12),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -170,27 +132,20 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
         style: ElevatedButton.styleFrom(
           backgroundColor: primaryTeal,
           elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
         onPressed: () {
-          // Điều hướng và xóa lịch sử các trang checkout/payment
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => const OrderStatusScreen(isBuyer: false),
+              // 3. ĐẨY TRẠNG THÁI TIẾP SANG TRANG ORDER STATUS
+              builder: (context) => OrderStatusScreen(isBuyer: widget.isBuyer), 
             ),
           );
         },
         child: Text(
           label,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-            letterSpacing: 1.1,
-          ),
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1.1),
         ),
       ),
     );

@@ -220,7 +220,7 @@ class ProductDetailScreen extends StatelessWidget {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const CheckoutScreen()),
+                    MaterialPageRoute(builder: (_) => const CheckoutScreen(isBuyer: true)),
                   );
                 },
                 style: ElevatedButton.styleFrom(

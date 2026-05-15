@@ -5,7 +5,9 @@ import '../widgets/payment_item_tile.dart';
 import 'payment_method_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
-  const CheckoutScreen({super.key});
+  const CheckoutScreen({super.key, required this.isBuyer});
+
+  final bool isBuyer;
 
   @override
   State<CheckoutScreen> createState() => _CheckoutScreenState();
@@ -32,7 +34,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     _loadAddressData();
   }
 
-  // --- HÀM ĐỌC JSON CHỈ LẤY TỈNH VÀ PHƯỜNG ---
+  // --- Hàm đọc json chỉ lấy tỉnh với phường ---
   Future<void> _loadAddressData() async {
     try {
       final String response = await rootBundle.loadString('assets/data/provinces.json');
@@ -135,7 +137,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     onChanged: (val) {
                       setState(() {
                         selectedProvinceCode = val;
-                        // LỌC THẲNG PHƯỜNG THEO MÃ TỈNH
+                        // lọc phường theo tỉnh đã chọn
                         _displayWards = _allWards.where((w) => w['province_code'].toString() == val).toList();
                         selectedWardCode = null; // Reset phường khi đổi tỉnh
                       });
@@ -185,7 +187,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => PaymentMethodScreen(method: selectedMethod),
+                              builder: (context) => PaymentMethodScreen(method: selectedMethod, isBuyer: widget.isBuyer),
                             ),
                           );
                         }

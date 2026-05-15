@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "617886373200",
+    "project_id": "selling-ap",
+    "storage_bucket": "selling-ap.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:617886373200:android:8f2d07465aa097e4480855",
+        "android_client_info": {
+          "package_name": "com.example.project_flutter"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBOZJATHuIsKpzTaMXU7nmcMXCXo-YQ8oM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:617886373200:android:26dfb3b6bdb231cb480855",
+        "android_client_info": {
+          "package_name": "com.example.tinnhan"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBOZJATHuIsKpzTaMXU7nmcMXCXo-YQ8oM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

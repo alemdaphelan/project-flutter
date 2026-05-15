@@ -682,7 +682,7 @@ class ProductCard extends StatelessWidget {
                 child: ElevatedButton.icon(
                   onPressed: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const CheckoutScreen()),
+                    MaterialPageRoute(builder: (_) => CheckoutScreen(isBuyer: true)),
                   ),
                   icon: const Icon(
                     Icons.shopping_cart_outlined,
