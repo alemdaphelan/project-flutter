@@ -15,7 +15,7 @@ class OrderModel {
     required this.timeAgo,
     required this.productName,
     required this.price,
-    required this.status,
+    this.status = "Đang xử lý", 
     required this.type,
   });
 }
