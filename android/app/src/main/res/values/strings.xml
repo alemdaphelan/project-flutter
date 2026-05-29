@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Selling App</string>
+    
+    <!-- Facebook Configuration -->
+    <string name="facebook_app_id">1284263789706443</string>
+    <string name="fb_login_protocol_scheme">fb1284263789706443</string>
+    <string name="facebook_client_token">fbf395057d99e7c3c40e51358ccca0de</string>
+</resources>

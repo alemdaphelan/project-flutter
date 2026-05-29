@@ -12,7 +12,12 @@
           "package_name": "com.example.project_flutter"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "617886373200-q6s9on4ds4aogpkko1tmc26p06ueea2h.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBOZJATHuIsKpzTaMXU7nmcMXCXo-YQ8oM"
@@ -20,7 +25,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "617886373200-q6s9on4ds4aogpkko1tmc26p06ueea2h.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "617886373200-a3gafk0ibevsrnj6vt4knnlv6fhbbjtf.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.tinnhan"
+              }
+            }
+          ]
         }
       }
     },
@@ -31,7 +48,12 @@
           "package_name": "com.example.tinnhan"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "617886373200-q6s9on4ds4aogpkko1tmc26p06ueea2h.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBOZJATHuIsKpzTaMXU7nmcMXCXo-YQ8oM"
@@ -39,7 +61,63 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "617886373200-q6s9on4ds4aogpkko1tmc26p06ueea2h.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "617886373200-a3gafk0ibevsrnj6vt4knnlv6fhbbjtf.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.tinnhan"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:617886373200:android:bce9a910bb529b75480855",
+        "android_client_info": {
+          "package_name": "com.nhom7.sellingapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "617886373200-38dgdg3n4m03uhsck768sahn0jadp1t2.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.nhom7.sellingapp",
+            "certificate_hash": "5d454451395df1fa43558b6a51fb7e43b5abffeb"
+          }
+        },
+        {
+          "client_id": "617886373200-q6s9on4ds4aogpkko1tmc26p06ueea2h.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBOZJATHuIsKpzTaMXU7nmcMXCXo-YQ8oM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "617886373200-q6s9on4ds4aogpkko1tmc26p06ueea2h.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "617886373200-a3gafk0ibevsrnj6vt4knnlv6fhbbjtf.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.tinnhan"
+              }
+            }
+          ]
         }
       }
     }
