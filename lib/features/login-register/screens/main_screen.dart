@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'login_screen.dart';
 
-class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
+class MainScreen_Auth extends StatefulWidget {
+  const MainScreen_Auth({super.key});
 
   @override
-  State<MainScreen> createState() => _MainScreenState();
+  State<MainScreen_Auth> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
+class _MainScreenState extends State<MainScreen_Auth> {
   final AuthService _authService = AuthService();
   bool _isLoading = false;
 
@@ -28,9 +28,9 @@ class _MainScreenState extends State<MainScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Đăng xuất thất bại: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Đăng xuất thất bại: $e')));
       }
     } finally {
       if (mounted) {
