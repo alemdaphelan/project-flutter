@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart'; // Đã thêm thư viện cache
-import 'package:project_flutter/features/HomePage/Models/UserProfile.dart';
 import 'package:project_flutter/features/HomePage/widgets/ProductList.dart';
 import 'package:project_flutter/firestore_service.dart';
+import 'package:project_flutter/shared/models/user_profile.dart';
 
 class ProfileScreen extends StatelessWidget {
-  final UserProfileModel userProfile;
+  final UserProfile userProfile;
 
   final Color primaryTeal = const Color(0xFF1B6B60);
   final Color bgColor = const Color(0xFFF2F8F7);
@@ -65,7 +65,7 @@ class ProfileScreen extends StatelessWidget {
             // ⚠️ LƯU Ý: Đảm bảo bên trong ProductList đã có shrinkWrap: true và physics: NeverScrollableScrollPhysics()
             ProductList(
               firestore: _firestore,
-              userId: userProfile.id,
+              userId: userProfile.uid,
               searchQuery: '',
               selectedCategory: 'All',
             ),
@@ -78,7 +78,7 @@ class ProfileScreen extends StatelessWidget {
 
   Widget _buildProfileHeader() {
     // Kỹ sư xịn luôn kiểm tra dữ liệu trước khi dùng
-    final hasValidAvatar = userProfile.avatarUrl.isNotEmpty;
+    final hasValidAvatar = userProfile.avatarUrl?.isNotEmpty ?? false;
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -99,7 +99,7 @@ class ProfileScreen extends StatelessWidget {
                 color: Colors.grey.shade300,
                 child: hasValidAvatar
                     ? CachedNetworkImage(
-                        imageUrl: userProfile.avatarUrl,
+                        imageUrl: userProfile.avatarUrl!,
                         fit: BoxFit.cover,
                         placeholder: (context, url) => const Center(
                           child: SizedBox(
@@ -124,16 +124,16 @@ class ProfileScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  userProfile.name,
+                  userProfile.displayName ?? 'Tên người dùng',
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 4),
-                _buildInfoRow(Icons.email_outlined, userProfile.email),
+                _buildInfoRow(Icons.email_outlined, userProfile.email ?? 'Email không xác định'),
                 const SizedBox(height: 4),
-                _buildInfoRow(Icons.location_on_outlined, userProfile.location),
+                _buildInfoRow(Icons.location_on_outlined, userProfile.location ?? 'Vị trí không xác định'),
                 const SizedBox(height: 4),
                 Text(
                   'Tổng đánh giá: ${userProfile.totalReviews}',

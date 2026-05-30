@@ -8,6 +8,10 @@ import 'package:project_flutter/features/HomePage/screens/Notification.dart';
 import 'package:project_flutter/features/HomePage/screens/CreatePost.dart';
 import 'package:project_flutter/features/TinNhan/screens/main_screen.dart';
 
+//moi them
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:project_flutter/features/login-register/screens/login_screen.dart';
+
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
   @override
@@ -245,7 +249,22 @@ class _MainScreenState extends State<MainScreen> {
                 'Đăng xuất',
                 style: TextStyle(color: Colors.red),
               ),
-              onTap: () => Navigator.pop(context),
+              onTap: () async {
+                Navigator.pop(context); // Đóng menu dưới lên
+
+                // Gọi lệnh Đăng xuất của Firebase
+                await FirebaseAuth.instance.signOut();
+
+                // Đẩy văng người dùng về lại trang Login
+                if (context.mounted) {
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                    (route) =>
+                        false, // Xóa sạch lịch sử trang, không cho lùi lại
+                  );
+                }
+              },
             ),
           ],
         ),

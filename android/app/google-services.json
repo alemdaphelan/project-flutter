@@ -86,11 +86,43 @@
       },
       "oauth_client": [
         {
+          "client_id": "617886373200-10qo1jq4fqc9hlbfol6muem2ubbgthu3.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.nhom7.sellingapp",
+            "certificate_hash": "4867399f5d9a4fd2d9cc694d5bb8b0d407dee95a"
+          }
+        },
+        {
+          "client_id": "617886373200-1qeqiudnrmtb7npbnup7qtgtpir0g6te.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.nhom7.sellingapp",
+            "certificate_hash": "947649f4e7db45e906b91c87c7609218eedc8534"
+          }
+        },
+        {
           "client_id": "617886373200-38dgdg3n4m03uhsck768sahn0jadp1t2.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.nhom7.sellingapp",
             "certificate_hash": "5d454451395df1fa43558b6a51fb7e43b5abffeb"
+          }
+        },
+        {
+          "client_id": "617886373200-8o4fclpm7jdsebe6m7m3986go7nabdeh.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.nhom7.sellingapp",
+            "certificate_hash": "d447d7f846f73e406b7248089d0350454dad81ce"
+          }
+        },
+        {
+          "client_id": "617886373200-bjhe4saecotcodhvcdlvq74rrorsvu3u.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.nhom7.sellingapp",
+            "certificate_hash": "d2533cf6045555666cba9a6cf37f69fac6789ab0"
           }
         },
         {

@@ -63,7 +63,7 @@ class ProductDetailScreen extends StatelessWidget {
 
   Widget _buildSellerInfo() {
     final hasValidAvatar =
-        product.seller != null && product.seller!.avatarUrl.isNotEmpty;
+        product.seller != null && (product.seller!.avatarUrl ?? '').isNotEmpty;
 
     return Row(
       children: [
@@ -71,7 +71,7 @@ class ProductDetailScreen extends StatelessWidget {
           radius: 20,
           backgroundColor: Colors.grey.shade200,
           backgroundImage: hasValidAvatar
-              ? NetworkImage(product.seller!.avatarUrl)
+              ? NetworkImage(product.seller!.avatarUrl!)
               : null,
           child: !hasValidAvatar
               ? const Icon(Icons.person, color: Colors.grey)
@@ -83,9 +83,7 @@ class ProductDetailScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                product.seller != null
-                    ? product.seller!.email
-                    : 'Unknown Seller',
+                product.seller?.email ?? 'Unknown Seller',
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 15,
