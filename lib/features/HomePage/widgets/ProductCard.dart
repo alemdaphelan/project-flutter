@@ -11,7 +11,7 @@ class ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sellerName = product.seller?.name ?? 'Người bán ẩn danh';
+    final sellerName = product.seller?.displayName ?? 'Người bán ẩn danh';
     final sellerEmail = product.seller?.email ?? 'Không có thông tin';
     final sellerAvatar = 'https://i.pravatar.cc/150';
     return Container(
@@ -166,7 +166,7 @@ class ProductCard extends StatelessWidget {
                   onPressed: () => Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => CheckoutScreen(isBuyer: true),
+                      builder: (_) => CheckoutScreen(product: product),
                     ),
                   ),
                   icon: const Icon(

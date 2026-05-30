@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:project_flutter/features/HomePage/screens/MainScreen.dart';
 import '../services/auth_service.dart';
 import 'change_password_screen.dart';
 import 'profile_setup_screen.dart';
-import 'main_screen.dart';
+
 
 class OTPScreen extends StatefulWidget {
   final String identifier; // Số điện thoại hoặc email
@@ -153,7 +154,7 @@ class _OTPScreenState extends State<OTPScreen> {
           context,
           MaterialPageRoute(
             builder: (_) =>
-                hasProfile ? MainScreen_Auth() : const ProfileSetupScreen(),
+                hasProfile ? const MainScreen() : const ProfileSetupScreen(),
           ),
           (route) => false,
         );

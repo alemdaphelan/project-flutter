@@ -1,5 +1,4 @@
-import 'package:project_flutter/features/HomePage/Models/UserProfile.dart';
-
+import 'package:project_flutter/shared/models/user_profile.dart';
 class ProductModel {
   final String sellerId;
   final String time;
@@ -11,7 +10,7 @@ class ProductModel {
   final String location;
   final String category;
 
-  UserProfileModel? seller;
+  UserProfile? seller;
 
   ProductModel({
     required this.sellerId,

@@ -61,6 +61,7 @@ import 'package:flutter/material.dart';
 import 'package:project_flutter/features/HomePage/screens/MainScreen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:project_flutter/firebase_options.dart';
+import 'package:project_flutter/features/login-register/screens/login_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -109,7 +110,7 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const MainScreen(),
+      home: const LoginScreen(),
     );
   }
 }
