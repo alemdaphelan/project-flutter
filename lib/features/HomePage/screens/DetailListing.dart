@@ -241,7 +241,7 @@ class ProductDetailScreen extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const CheckoutScreen(isBuyer: true),
+                      builder: (_) => CheckoutScreen(product: product),
                     ),
                   );
                 },
