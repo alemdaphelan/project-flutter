@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart'; // Đã thêm thư viện cache
 import 'package:project_flutter/features/HomePage/Models/UserProfile.dart';
-import 'package:project_flutter/features/HomePage/Models/Post.dart';
+import 'package:project_flutter/features/HomePage/widgets/ProductList.dart';
+import 'package:project_flutter/firestore_service.dart';
 
 class ProfileScreen extends StatelessWidget {
   final UserProfileModel userProfile;
-  final List<UserPostModel> userPosts;
 
   final Color primaryTeal = const Color(0xFF1B6B60);
   final Color bgColor = const Color(0xFFF2F8F7);
 
-  const ProfileScreen({
-    super.key,
-    required this.userProfile,
-    required this.userPosts,
-  });
+  // Khởi tạo service
+  final FirestoreService _firestore = FirestoreService();
+
+  ProfileScreen({super.key, required this.userProfile});
 
   @override
   Widget build(BuildContext context) {
@@ -44,10 +44,10 @@ class ProfileScreen extends StatelessWidget {
           ],
         ),
       ),
-      body: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(
-            child: Container(
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            Container(
               color: Colors.white,
               padding: const EdgeInsets.only(bottom: 16),
               child: Column(
@@ -61,26 +61,25 @@ class ProfileScreen extends StatelessWidget {
                 ],
               ),
             ),
-          ),
-
-          SliverToBoxAdapter(child: _buildSectionTitle()),
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            sliver: SliverList(
-              delegate: SliverChildBuilderDelegate((context, index) {
-                return _buildPostCard(userPosts[index]);
-              }, childCount: userPosts.length),
+            _buildSectionTitle(),
+            // ⚠️ LƯU Ý: Đảm bảo bên trong ProductList đã có shrinkWrap: true và physics: NeverScrollableScrollPhysics()
+            ProductList(
+              firestore: _firestore,
+              userId: userProfile.id,
+              searchQuery: '',
+              selectedCategory: 'All',
             ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 32)),
-        ],
+            const SizedBox(height: 32),
+          ],
+        ),
       ),
     );
   }
 
-  // --- COMPONENT BUILDERS ---
-
   Widget _buildProfileHeader() {
+    // Kỹ sư xịn luôn kiểm tra dữ liệu trước khi dùng
+    final hasValidAvatar = userProfile.avatarUrl.isNotEmpty;
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Row(
@@ -92,12 +91,31 @@ class ProfileScreen extends StatelessWidget {
               shape: BoxShape.circle,
               border: Border.all(color: primaryTeal, width: 2),
             ),
-            child: CircleAvatar(
-              radius: 40,
-              backgroundColor: Colors.grey.shade300,
-              backgroundImage: NetworkImage(userProfile.avatarUrl),
-              onBackgroundImageError: (_, __) =>
-                  const Icon(Icons.person, size: 40),
+            // Tối ưu: Dùng ClipOval bọc CachedNetworkImage thay vì NetworkImage
+            child: ClipOval(
+              child: Container(
+                width: 80, // Tương đương radius 40 * 2
+                height: 80,
+                color: Colors.grey.shade300,
+                child: hasValidAvatar
+                    ? CachedNetworkImage(
+                        imageUrl: userProfile.avatarUrl,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => const Center(
+                          child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ),
+                        errorWidget: (context, url, error) => const Icon(
+                          Icons.person,
+                          size: 40,
+                          color: Colors.grey,
+                        ),
+                      )
+                    : const Icon(Icons.person, size: 40, color: Colors.grey),
+              ),
             ),
           ),
           const SizedBox(width: 16),
@@ -185,84 +203,6 @@ class ProfileScreen extends StatelessWidget {
             label: const Text(
               'Xem đánh giá',
               style: TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPostCard(UserPostModel post) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 12,
-                  backgroundImage: NetworkImage(post.authorAvatarUrl),
-                  onBackgroundImageError: (_, __) =>
-                      const Icon(Icons.person, size: 16),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  '${post.authorName}, ${post.timeAgo}',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            height: 200,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              image: DecorationImage(
-                image: NetworkImage(post.productImageUrl),
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  post.productName,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  post.price,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: primaryTeal,
-                  ),
-                ),
-              ],
             ),
           ),
         ],

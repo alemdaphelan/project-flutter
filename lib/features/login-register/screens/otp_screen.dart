@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 import 'change_password_screen.dart';
 import 'profile_setup_screen.dart';
 import 'main_screen.dart';
 
 class OTPScreen extends StatefulWidget {
-  final String identifier;       // Số điện thoại hoặc email
-  final bool isPhone;            // true = số điện thoại, false = email
-  final bool isPasswordReset;    // true = quên mật khẩu, false = đăng nhập/ký
-  final String? passwordForPhoneRegister; // Mật khẩu khi đăng ký bằng SĐT (không dùng với Firebase Phone Auth)
+  final String identifier; // Số điện thoại hoặc email
+  final bool isPhone; // true = số điện thoại, false = email
+  final bool isPasswordReset; // true = quên mật khẩu, false = đăng nhập/ký
+  final String?
+  passwordForPhoneRegister; // Mật khẩu khi đăng ký bằng SĐT (không dùng với Firebase Phone Auth)
 
   const OTPScreen({
     super.key,
@@ -28,9 +28,9 @@ class _OTPScreenState extends State<OTPScreen> {
   final _authService = AuthService();
 
   bool _isLoading = false;
-  bool _isSending = true;       // Đang gửi OTP lần đầu
-  bool _canResend = false;      // Có thể gửi lại không
-  int _resendCountdown = 60;    // Đếm ngược gửi lại
+  bool _isSending = true; // Đang gửi OTP lần đầu
+  bool _canResend = false; // Có thể gửi lại không
+  int _resendCountdown = 60; // Đếm ngược gửi lại
 
   // Dùng cho email reset — không cần nhập OTP
   bool _isEmailReset = false;
@@ -152,9 +152,8 @@ class _OTPScreenState extends State<OTPScreen> {
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(
-            builder: (_) => hasProfile
-                ? const MainScreen()
-                : const ProfileSetupScreen(),
+            builder: (_) =>
+                hasProfile ? MainScreen_Auth() : const ProfileSetupScreen(),
           ),
           (route) => false,
         );
@@ -169,10 +168,7 @@ class _OTPScreenState extends State<OTPScreen> {
   void _showSnackBar(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
-      ),
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
     );
   }
 
@@ -182,15 +178,17 @@ class _OTPScreenState extends State<OTPScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.isPasswordReset ? 'Đặt lại mật khẩu' : 'Xác minh OTP'),
+        title: Text(
+          widget.isPasswordReset ? 'Đặt lại mật khẩu' : 'Xác minh OTP',
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: _isSending
             ? _buildSendingState()
             : _isEmailReset
-                ? _buildEmailResetState()
-                : _buildOTPInputState(),
+            ? _buildEmailResetState()
+            : _buildOTPInputState(),
       ),
     );
   }
@@ -215,7 +213,11 @@ class _OTPScreenState extends State<OTPScreen> {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         const SizedBox(height: 40),
-        const Icon(Icons.mark_email_read_outlined, size: 80, color: Colors.blue),
+        const Icon(
+          Icons.mark_email_read_outlined,
+          size: 80,
+          color: Colors.blue,
+        ),
         const SizedBox(height: 24),
         const Text(
           'Đã gửi email đặt lại mật khẩu!',
@@ -270,7 +272,11 @@ class _OTPScreenState extends State<OTPScreen> {
           keyboardType: TextInputType.number,
           maxLength: 6,
           textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 28, letterSpacing: 12, fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            fontSize: 28,
+            letterSpacing: 12,
+            fontWeight: FontWeight.bold,
+          ),
           decoration: const InputDecoration(
             labelText: 'Mã OTP 6 số',
             border: OutlineInputBorder(),

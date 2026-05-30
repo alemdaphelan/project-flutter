@@ -8,16 +8,16 @@ import '../services/firebase_chat_service.dart';
 import '../services/management_service.dart';
 import '../services/chat_extension_service.dart';
 
-class MainScreen extends StatefulWidget {
-  const MainScreen({Key? key}) : super(key: key);
+class MainScreen_Chat extends StatefulWidget {
+  const MainScreen_Chat({Key? key}) : super(key: key);
   @override
-  State<MainScreen> createState() => _MainScreenState();
+  State<MainScreen_Chat> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
+class _MainScreenState extends State<MainScreen_Chat> {
   final FirebaseChatService _chatService = FirebaseChatService();
   final ManagementService _mngt = ManagementService();
-  
+
   String _searchQuery = "";
   String _selectedFilter = "Tất cả";
   DateTime? _selectedDate;
@@ -25,16 +25,23 @@ class _MainScreenState extends State<MainScreen> {
   // Làm nổi bật từ khóa tìm kiếm trong đoạn văn bản
   Widget _highlightText(String text, String query) {
     if (query.isEmpty || !text.toLowerCase().contains(query.toLowerCase())) {
-      return Text(text, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16));
+      return Text(
+        text,
+        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+      );
     }
 
     final String lowerText = text.toLowerCase();
     final String lowerQuery = query.toLowerCase();
     final int start = lowerText.indexOf(lowerQuery);
-    
+
     return RichText(
       text: TextSpan(
-        style: const TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold),
+        style: const TextStyle(
+          color: Colors.black,
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+        ),
         children: [
           TextSpan(text: text.substring(0, start)),
           TextSpan(
@@ -55,7 +62,14 @@ class _MainScreenState extends State<MainScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text("Chat", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 22)),
+        title: const Text(
+          "Chat",
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+            fontSize: 22,
+          ),
+        ),
         actions: [
           PopupMenuButton<int>(
             icon: const Icon(Icons.more_vert, color: Colors.black),
@@ -66,12 +80,36 @@ class _MainScreenState extends State<MainScreen> {
               if (val == 3) _mngt.showHiddenChats(context);
             },
             itemBuilder: (context) => [
-              const PopupMenuItem(value: 0, child: ListTile(leading: Icon(Icons.business_center_outlined), title: Text("Quản lý phân loại"))),
-              const PopupMenuItem(value: 1, child: ListTile(leading: Icon(Icons.settings_outlined), title: Text("Cài đặt trả lời tự động"))),
-              const PopupMenuItem(value: 2, child: ListTile(leading: Icon(Icons.message_outlined), title: Text("Quản lý Tin nhắn nhanh"))),
-              const PopupMenuItem(value: 3, child: ListTile(leading: Icon(Icons.visibility_off_outlined), title: Text("Hội thoại đã ẩn"))),
+              const PopupMenuItem(
+                value: 0,
+                child: ListTile(
+                  leading: Icon(Icons.business_center_outlined),
+                  title: Text("Quản lý phân loại"),
+                ),
+              ),
+              const PopupMenuItem(
+                value: 1,
+                child: ListTile(
+                  leading: Icon(Icons.settings_outlined),
+                  title: Text("Cài đặt trả lời tự động"),
+                ),
+              ),
+              const PopupMenuItem(
+                value: 2,
+                child: ListTile(
+                  leading: Icon(Icons.message_outlined),
+                  title: Text("Quản lý Tin nhắn nhanh"),
+                ),
+              ),
+              const PopupMenuItem(
+                value: 3,
+                child: ListTile(
+                  leading: Icon(Icons.visibility_off_outlined),
+                  title: Text("Hội thoại đã ẩn"),
+                ),
+              ),
             ],
-          )
+          ),
         ],
       ),
       body: Column(
@@ -82,7 +120,10 @@ class _MainScreenState extends State<MainScreen> {
               children: [
                 Expanded(
                   child: Container(
-                    decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(10)),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                     child: TextField(
                       onChanged: (val) => setState(() => _searchQuery = val),
                       decoration: const InputDecoration(
@@ -96,7 +137,12 @@ class _MainScreenState extends State<MainScreen> {
                 ),
                 const SizedBox(width: 10),
                 IconButton(
-                  icon: Icon(Icons.calendar_month, color: _selectedDate != null ? const Color(0xFFFFCE00) : Colors.grey),
+                  icon: Icon(
+                    Icons.calendar_month,
+                    color: _selectedDate != null
+                        ? const Color(0xFFFFCE00)
+                        : Colors.grey,
+                  ),
                   onPressed: () async {
                     final date = await showDatePicker(
                       context: context,
@@ -116,9 +162,22 @@ class _MainScreenState extends State<MainScreen> {
             child: ListView(
               scrollDirection: Axis.horizontal,
               children: [
-                ChatFilterChip(label: "Tất cả", isSelected: _selectedFilter == "Tất cả", onTap: () => setState(() => _selectedFilter = "Tất cả")),
-                ChatFilterChip(label: "Chưa đọc", isSelected: _selectedFilter == "Chưa đọc", onTap: () => setState(() => _selectedFilter = "Chưa đọc")),
-                ChatFilterChip(label: "Tin rác / Bỏ qua", isSelected: _selectedFilter == "Tin rác / Bỏ qua", onTap: () => setState(() => _selectedFilter = "Tin rác / Bỏ qua")),
+                ChatFilterChip(
+                  label: "Tất cả",
+                  isSelected: _selectedFilter == "Tất cả",
+                  onTap: () => setState(() => _selectedFilter = "Tất cả"),
+                ),
+                ChatFilterChip(
+                  label: "Chưa đọc",
+                  isSelected: _selectedFilter == "Chưa đọc",
+                  onTap: () => setState(() => _selectedFilter = "Chưa đọc"),
+                ),
+                ChatFilterChip(
+                  label: "Tin rác / Bỏ qua",
+                  isSelected: _selectedFilter == "Tin rác / Bỏ qua",
+                  onTap: () =>
+                      setState(() => _selectedFilter = "Tin rác / Bỏ qua"),
+                ),
                 if (_selectedDate != null)
                   Padding(
                     padding: const EdgeInsets.only(left: 8),
@@ -136,21 +195,36 @@ class _MainScreenState extends State<MainScreen> {
             child: StreamBuilder<QuerySnapshot>(
               stream: _chatService.getChatRoomsStream(),
               builder: (context, snapshot) {
-                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-                
-                var rooms = snapshot.data!.docs.map((d) => ChatRoom.fromFirestore(d)).toList();
+                if (!snapshot.hasData)
+                  return const Center(child: CircularProgressIndicator());
+
+                var rooms = snapshot.data!.docs
+                    .map((d) => ChatRoom.fromFirestore(d))
+                    .toList();
 
                 // LỌC: Loại bỏ các hội thoại đã bị ẩn khỏi danh sách
-                rooms = rooms.where((r) => !ChatExtensionService.hiddenChatIds.contains(r.id)).toList();
+                rooms = rooms
+                    .where(
+                      (r) => !ChatExtensionService.hiddenChatIds.contains(r.id),
+                    )
+                    .toList();
 
                 if (_searchQuery.isNotEmpty) {
-                  rooms = rooms.where((r) => r.otherUserName.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
+                  rooms = rooms
+                      .where(
+                        (r) => r.otherUserName.toLowerCase().contains(
+                          _searchQuery.toLowerCase(),
+                        ),
+                      )
+                      .toList();
                 }
 
                 if (_selectedDate != null) {
                   rooms = rooms.where((r) {
                     final rDate = r.timestamp.toDate();
-                    return rDate.year == _selectedDate!.year && rDate.month == _selectedDate!.month && rDate.day == _selectedDate!.day;
+                    return rDate.year == _selectedDate!.year &&
+                        rDate.month == _selectedDate!.month &&
+                        rDate.day == _selectedDate!.day;
                   }).toList();
                 }
 
@@ -161,18 +235,33 @@ class _MainScreenState extends State<MainScreen> {
                 return ListView.builder(
                   itemCount: rooms.length,
                   itemBuilder: (c, i) => ListTile(
-                    leading: const CircleAvatar(backgroundColor: Color(0xFFFFCE00), child: Icon(Icons.person, color: Colors.white)),
+                    leading: const CircleAvatar(
+                      backgroundColor: Color(0xFFFFCE00),
+                      child: Icon(Icons.person, color: Colors.white),
+                    ),
                     title: _highlightText(rooms[i].otherUserName, _searchQuery),
-                    subtitle: Text(rooms[i].lastMessage, maxLines: 1, overflow: TextOverflow.ellipsis),
-                    trailing: Text(DateFormat('HH:mm').format(rooms[i].timestamp.toDate()), style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (c) => ChatScreen(chatRoomId: rooms[i].id))),
-                    
+                    subtitle: Text(
+                      rooms[i].lastMessage,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: Text(
+                      DateFormat('HH:mm').format(rooms[i].timestamp.toDate()),
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (c) => ChatScreen(chatRoomId: rooms[i].id),
+                      ),
+                    ),
+
                     // Kích hoạt menu tùy chọn và cập nhật UI khi có thao tác Ẩn/Xóa
                     onLongPress: () => ChatExtensionService.showChatOptions(
-                      context, 
-                      rooms[i].id, 
+                      context,
+                      rooms[i].id,
                       rooms[i].otherUserName,
-                      () => setState(() {}) 
+                      () => setState(() {}),
                     ),
                   ),
                 );
@@ -186,7 +275,10 @@ class _MainScreenState extends State<MainScreen> {
         child: const Icon(Icons.add, color: Colors.black),
         onPressed: () async {
           String id = await _chatService.createNewChat();
-          Navigator.push(context, MaterialPageRoute(builder: (c) => ChatScreen(chatRoomId: id)));
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (c) => ChatScreen(chatRoomId: id)),
+          );
         },
       ),
     );
@@ -200,7 +292,10 @@ class _MainScreenState extends State<MainScreen> {
         children: [
           Icon(Icons.search_off, size: 80, color: Colors.grey[300]),
           const SizedBox(height: 10),
-          const Text("Không tìm thấy cuộc trò chuyện nào!", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+          const Text(
+            "Không tìm thấy cuộc trò chuyện nào!",
+            style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
+          ),
         ],
       ),
     );

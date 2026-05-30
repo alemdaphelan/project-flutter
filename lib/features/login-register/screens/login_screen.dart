@@ -61,9 +61,8 @@ class _LoginScreenState extends State<LoginScreen> {
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
-        builder: (_) => hasProfile
-            ? const MainScreen()
-            : const ProfileSetupScreen(),
+        builder: (_) =>
+            hasProfile ? const MainScreen_Auth() : const ProfileSetupScreen(),
       ),
       (route) => false,
     );
@@ -222,10 +221,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void _showSnackBar(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
-      ),
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
     );
   }
 

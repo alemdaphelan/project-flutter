@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:project_flutter/features/HomePage/Models/ProductDetailModel.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:project_flutter/features/HomePage/Models/Product.dart';
 import 'package:project_flutter/features/payment/screens/checkout_screen.dart';
 
 class ProductDetailScreen extends StatelessWidget {
-  final ProductDetailModel product;
+  final ProductModel product;
   final Color primaryTeal = const Color(0xFF1B6B60);
 
   const ProductDetailScreen({super.key, required this.product});
@@ -61,13 +62,21 @@ class ProductDetailScreen extends StatelessWidget {
   // --- COMPONENT BUILDERS ---
 
   Widget _buildSellerInfo() {
+    // Kiểm tra URL ảnh đại diện hợp lệ
+    final hasValidAvatar =
+        product.seller != null && product.seller!.avatarUrl.isNotEmpty;
+
     return Row(
       children: [
         CircleAvatar(
           radius: 20,
           backgroundColor: Colors.grey.shade200,
-          backgroundImage: NetworkImage(product.shopAvatarUrl),
-          onBackgroundImageError: (_, __) => const Icon(Icons.person),
+          backgroundImage: hasValidAvatar
+              ? NetworkImage(product.seller!.avatarUrl)
+              : null,
+          child: !hasValidAvatar
+              ? const Icon(Icons.person, color: Colors.grey)
+              : null,
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -75,21 +84,23 @@ class ProductDetailScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                product.shopName,
+                product.seller != null
+                    ? product.seller!.email
+                    : 'Unknown Seller',
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 15,
                 ),
               ),
               Text(
-                product.shopHandle,
+                product.location,
                 style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
               ),
             ],
           ),
         ),
         Text(
-          product.timeAgo,
+          product.time.toString(),
           style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
         ),
       ],
@@ -103,9 +114,23 @@ class ProductDetailScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.grey.shade100,
         borderRadius: BorderRadius.circular(12),
-        image: DecorationImage(
-          image: NetworkImage(product.productImageUrl),
+      ),
+      // ClipRRect giúp bo góc ảnh
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: CachedNetworkImage(
+          imageUrl: product.productImageUrl,
           fit: BoxFit.cover,
+          placeholder: (context, url) =>
+              const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          errorWidget: (context, url, error) => const Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.broken_image, color: Colors.grey, size: 40),
+              SizedBox(height: 8),
+              Text('Không thể tải ảnh', style: TextStyle(color: Colors.grey)),
+            ],
+          ),
         ),
       ),
     );
@@ -125,7 +150,7 @@ class ProductDetailScreen extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          product.price,
+          '\$${product.price.toStringAsFixed(2)}',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w700,
@@ -145,7 +170,6 @@ class ProductDetailScreen extends StatelessWidget {
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
-        // Tạo list thông tin tự động từ Map (Dictionary)
         ...product.specifications.entries.map((entry) {
           return Padding(
             padding: const EdgeInsets.only(bottom: 8.0),
@@ -220,7 +244,9 @@ class ProductDetailScreen extends StatelessWidget {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const CheckoutScreen(isBuyer: true)),
+                    MaterialPageRoute(
+                      builder: (_) => const CheckoutScreen(isBuyer: true),
+                    ),
                   );
                 },
                 style: ElevatedButton.styleFrom(
@@ -232,9 +258,12 @@ class ProductDetailScreen extends StatelessWidget {
                   ),
                   elevation: 0,
                 ),
-                child: const Text(
-                  'Mua hàng',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                child: const FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    'Mua hàng',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
             ),
@@ -251,9 +280,12 @@ class ProductDetailScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: const Text(
-                  'Liên hệ người bán',
-                  style: TextStyle(fontSize: 13),
+                child: const FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    'Liên hệ người bán',
+                    style: TextStyle(fontSize: 13),
+                  ),
                 ),
               ),
             ),
@@ -270,9 +302,12 @@ class ProductDetailScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: const Text(
-                  'Thương lượng',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                child: const FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    'Thương lượng',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
                 ),
               ),
             ),

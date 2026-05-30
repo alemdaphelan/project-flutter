@@ -23,8 +23,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
   List<String> _selectedInterests = [];
   bool _isLoading = false;
-  File? _avatarFile;          // File ảnh đã chọn từ máy
-  String? _avatarLocalPath;   // Đường dẫn tạm (nếu không upload Storage)
+  File? _avatarFile; // File ảnh đã chọn từ máy
+  String? _avatarLocalPath; // Đường dẫn tạm (nếu không upload Storage)
 
   final ImagePicker _picker = ImagePicker();
 
@@ -65,7 +65,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
           children: [
             const SizedBox(height: 8),
             Container(
-              width: 40, height: 4,
+              width: 40,
+              height: 4,
               decoration: BoxDecoration(
                 color: Colors.grey[300],
                 borderRadius: BorderRadius.circular(2),
@@ -96,7 +97,10 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             if (_avatarFile != null)
               ListTile(
                 leading: const Icon(Icons.delete, color: Colors.red),
-                title: const Text('Xóa ảnh', style: TextStyle(color: Colors.red)),
+                title: const Text(
+                  'Xóa ảnh',
+                  style: TextStyle(color: Colors.red),
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   setState(() => _avatarFile = null);
@@ -172,12 +176,14 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         await Future.delayed(const Duration(milliseconds: 500));
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (_) => const MainScreen()),
+          MaterialPageRoute(builder: (_) => MainScreen_Auth()),
           (route) => false,
         );
       }
     } catch (e) {
-      _showSnackBar('Lỗi lưu thông tin: ${e.toString().replaceAll('Exception: ', '')}');
+      _showSnackBar(
+        'Lỗi lưu thông tin: ${e.toString().replaceAll('Exception: ', '')}',
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -186,10 +192,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   void _showSnackBar(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
-      ),
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
     );
   }
 
@@ -323,7 +326,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                   hintText: '0912345678 (không bắt buộc)',
                 ),
                 validator: (value) {
-                  if (value == null || value.trim().isEmpty) return null; // Không bắt buộc
+                  if (value == null || value.trim().isEmpty)
+                    return null; // Không bắt buộc
                   final phoneRegex = RegExp(r'^(0[3-9][0-9]{8})$');
                   if (!phoneRegex.hasMatch(value.trim())) {
                     return 'Số điện thoại phải có đúng 10 số';
@@ -353,10 +357,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
               // Sở thích mua sắm
               const Text(
                 'Sở thích mua sắm',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               const SizedBox(height: 4),
               const Text(
