@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:project_flutter/features/HomePage/screens/MainScreen.dart';
+import 'package:project_flutter/shared/models/user_profile.dart';
 import 'dart:io';
 import '../services/auth_service.dart';
-import '../models/user_profile.dart';
-import 'main_screen.dart';
+
+
 
 class ProfileSetupScreen extends StatefulWidget {
   const ProfileSetupScreen({super.key});
@@ -176,7 +178,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         await Future.delayed(const Duration(milliseconds: 500));
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (_) => MainScreen_Auth()),
+          MaterialPageRoute(builder: (_) => MainScreen()),
           (route) => false,
         );
       }

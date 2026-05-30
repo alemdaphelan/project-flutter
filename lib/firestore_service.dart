@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:project_flutter/features/HomePage/Models/Product.dart';
-import 'package:project_flutter/features/HomePage/Models/UserProfile.dart';
-
+import 'package:project_flutter/shared/models/user_profile.dart';
 class FirestoreService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
@@ -49,11 +48,11 @@ class FirestoreService {
     }
   }
 
-  Future<UserProfileModel?> getUserProfile(String uid) async {
+  Future<UserProfile?> getUserProfile(String uid) async {
     try {
       final doc = await _firestore.collection('users').doc(uid).get();
       if (doc.exists && doc.data() != null) {
-        return UserProfileModel.fromFirestore(doc.data()!, doc.id);
+        return UserProfile.fromMap(doc.data()!, doc.id);
       }
     } catch (e) {
       print('Lỗi khi lấy thông tin seller: $e');
@@ -74,7 +73,7 @@ class FirestoreService {
           doc.id,
         );
       }).toList();
-      UserProfileModel? sellerProfile = await getUserProfile(userId);
+      UserProfile? sellerProfile = await getUserProfile(userId);
       if (sellerProfile != null) {
         for (var product in userProducts) {
           product.seller = sellerProfile;

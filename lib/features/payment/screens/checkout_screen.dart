@@ -1,13 +1,18 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../widgets/payment_item_tile.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:project_flutter/features/HomePage/Models/Product.dart';
+import 'package:project_flutter/features/payment/models/OrderModel.dart';
+import 'package:project_flutter/features/payment/services/OrderService.dart';
+import 'package:project_flutter/features/payment/widgets/payment_item_tile.dart';
 import 'payment_method_screen.dart';
 
 class CheckoutScreen extends StatefulWidget {
-  const CheckoutScreen({super.key, required this.isBuyer});
+  /// Nhận ProductModel từ DetailListing thay vì hardcode
+  final ProductModel product;
 
-  final bool isBuyer;
+  const CheckoutScreen({super.key, required this.product});
 
   @override
   State<CheckoutScreen> createState() => _CheckoutScreenState();
@@ -17,16 +22,23 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final _formKey = GlobalKey<FormState>();
   final Color primaryTeal = const Color(0xFF1B6B60);
 
+  // Controllers form
+  final _nameCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
+  final _streetCtrl = TextEditingController();
+
+  // Dữ liệu địa chỉ
   List<dynamic> _allProvinces = [];
   List<dynamic> _allWards = [];
   List<dynamic> _displayWards = [];
-
-  // 2 mã để quản lý
   String? selectedProvinceCode;
+  String? selectedProvinceName;
   String? selectedWardCode;
+  String? selectedWardName;
 
-  String selectedMethod = "COD";
+  String selectedMethod = 'COD';
   bool _isLoading = true;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -34,29 +46,34 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     _loadAddressData();
   }
 
-  // --- Hàm đọc json chỉ lấy tỉnh với phường ---
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _phoneCtrl.dispose();
+    _streetCtrl.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadAddressData() async {
     try {
-      final String response = await rootBundle.loadString('assets/data/provinces.json');
+      final String response =
+          await rootBundle.loadString('assets/data/provinces.json');
       final List<dynamic> data = json.decode(response);
-
       setState(() {
-        // Lấy bảng provinces và wards
-        _allProvinces = data.firstWhere((e) => e['name'] == 'provinces')['data'];
+        _allProvinces =
+            data.firstWhere((e) => e['name'] == 'provinces')['data'];
         _allWards = data.firstWhere((e) => e['name'] == 'wards')['data'];
-        
         _isLoading = false;
       });
     } catch (e) {
-      debugPrint("Lỗi cấu trúc JSON: $e");
+      debugPrint('Lỗi load address: $e');
       setState(() => _isLoading = false);
     }
   }
 
   String? _validatePhone(String? value) {
     if (value == null || value.isEmpty) return 'Vui lòng nhập số điện thoại';
-    final phoneRegex = RegExp(r'^(0|\+84)[0-9]{9}$');
-    if (!phoneRegex.hasMatch(value)) return 'SĐT không hợp lệ';
+    if (!RegExp(r'^(0|\+84)[0-9]{9}$').hasMatch(value)) return 'SĐT không hợp lệ';
     return null;
   }
 
@@ -75,7 +92,72 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(color: primaryTeal, width: 2),
       ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.red),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.red, width: 2),
+      ),
     );
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _isSubmitting = true);
+
+    try {
+      final uid = FirebaseAuth.instance.currentUser!.uid;
+
+      // Ghép địa chỉ đầy đủ
+      final fullAddress =
+          '${_streetCtrl.text.trim()}, $selectedWardName, $selectedProvinceName';
+
+      // Tạo đơn hàng trên Firestore
+      final order = OrderModel(
+        id: '',
+        buyerId: uid,
+        sellerId: widget.product.sellerId,
+        productId: widget.product.productName, // dùng tạm, lý tưởng là Firestore doc ID
+        productName: widget.product.productName,
+        productImageUrl: widget.product.productImageUrl,
+        price: widget.product.price,
+        receiverName: _nameCtrl.text.trim(),
+        receiverPhone: _phoneCtrl.text.trim(),
+        deliveryAddress: fullAddress,
+        paymentMethod: selectedMethod,
+        createdAt: DateTime.now(),
+      );
+
+      final orderId = await OrderService().createOrder(order);
+
+      if (!mounted) return;
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PaymentMethodScreen(
+            method: selectedMethod,
+            isBuyer: true,
+            amount: widget.product.price.toInt(),
+            orderId: orderId,         // truyền orderId để theo dõi realtime
+            sellerId: widget.product.sellerId,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi đặt hàng: $e'),
+            backgroundColor: Colors.red.shade400,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 
   @override
@@ -86,120 +168,201 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black, size: 20),
+          icon: const Icon(Icons.arrow_back_ios_new,
+              color: Colors.black, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         title: Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            Text('Oldie', style: TextStyle(color: primaryTeal, fontSize: 24, fontWeight: FontWeight.bold)),
+            Text('Oldie',
+                style: TextStyle(
+                    color: primaryTeal,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold)),
           ],
         ),
       ),
-      body: _isLoading 
-        ? const Center(child: CircularProgressIndicator()) 
-        : SingleChildScrollView(
-            padding: const EdgeInsets.all(20.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const PaymentItemTile(name: "Sản phẩm Demo", price: 250000),
-                  const SizedBox(height: 24),
-                  const Text("Thông tin giao hàng", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 16),
-
-                  TextFormField(
-                    decoration: _inputStyle("Họ và tên người nhận", icon: Icons.person_outline),
-                    validator: (val) => val == null || val.isEmpty ? 'Vui lòng nhập họ tên' : null,
-                  ),
-                  const SizedBox(height: 16),
-
-                  TextFormField(
-                    keyboardType: TextInputType.phone,
-                    decoration: _inputStyle("Số điện thoại", icon: Icons.phone_android_outlined),
-                    validator: _validatePhone,
-                  ),
-                  const SizedBox(height: 24),
-
-                  const Text("Địa chỉ chi tiết (2 cấp)", style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.grey)),
-                  const SizedBox(height: 12),
-
-                  // 1. Dropdown Tỉnh / Thành phố
-                  DropdownButtonFormField<String>(
-                    decoration: _inputStyle("Tỉnh / Thành phố"),
-                    value: selectedProvinceCode,
-                    items: _allProvinces.map((p) => DropdownMenuItem(
-                      value: p['province_code'].toString(), 
-                      child: Text(p['name'])
-                    )).toList(),
-                    onChanged: (val) {
-                      setState(() {
-                        selectedProvinceCode = val;
-                        // lọc phường theo tỉnh đã chọn
-                        _displayWards = _allWards.where((w) => w['province_code'].toString() == val).toList();
-                        selectedWardCode = null; // Reset phường khi đổi tỉnh
-                      });
-                    },
-                    validator: (val) => val == null ? 'Chọn Tỉnh/Thành' : null,
-                  ),
-                  const SizedBox(height: 12),
-
-                  // 2. Dropdown Phường / Xã (Hiện ngay sau Tỉnh)
-                  DropdownButtonFormField<String>(
-                    decoration: _inputStyle("Phường / Xã / Thị trấn"),
-                    value: selectedWardCode,
-                    items: _displayWards.map((w) => DropdownMenuItem(
-                      value: w['ward_code'].toString(), 
-                      child: Text(w['name'])
-                    )).toList(),
-                    onChanged: (val) => setState(() => selectedWardCode = val),
-                    validator: (val) => val == null ? 'Chọn Phường/Xã' : null,
-                  ),
-                  const SizedBox(height: 12),
-
-                  TextFormField(
-                    maxLines: 2,
-                    decoration: _inputStyle("Số nhà, tên đường, tổ/ấp..."),
-                    validator: (val) => val == null || val.isEmpty ? 'Vui lòng nhập địa chỉ cụ thể' : null,
-                  ),
-
-                  const SizedBox(height: 32),
-                  const Text("Phương thức thanh toán", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 12),
-
-                  _buildPaymentOption("COD", "Thanh toán khi nhận hàng (COD)"),
-                  _buildPaymentOption("Bank", "Chuyển khoản ngân hàng (VietQR)"),
-
-                  const SizedBox(height: 40),
-
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryTeal,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      onPressed: () {
-                        if (_formKey.currentState!.validate()) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => PaymentMethodScreen(method: selectedMethod, isBuyer: widget.isBuyer),
-                            ),
-                          );
-                        }
-                      },
-                      child: const Text("TIẾP TỤC", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(20.0),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ── Thông tin sản phẩm lấy từ ProductModel ──
+                    PaymentItemTile(
+                      name: widget.product.productName,
+                      price: widget.product.price,
+                      //imageUrl: widget.product.productImageUrl,
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                ],
+                    const SizedBox(height: 24),
+
+                    const Text('Thông tin giao hàng',
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 16),
+
+                    TextFormField(
+                      controller: _nameCtrl,
+                      decoration: _inputStyle('Họ và tên người nhận',
+                          icon: Icons.person_outline),
+                      validator: (val) => val == null || val.isEmpty
+                          ? 'Vui lòng nhập họ tên'
+                          : null,
+                    ),
+                    const SizedBox(height: 16),
+
+                    TextFormField(
+                      controller: _phoneCtrl,
+                      keyboardType: TextInputType.phone,
+                      decoration: _inputStyle('Số điện thoại',
+                          icon: Icons.phone_android_outlined),
+                      validator: _validatePhone,
+                    ),
+                    const SizedBox(height: 24),
+
+                    Text('Địa chỉ giao hàng',
+                        style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey.shade700)),
+                    const SizedBox(height: 12),
+
+                    // Dropdown Tỉnh
+                    DropdownButtonFormField<String>(
+                      decoration: _inputStyle('Tỉnh / Thành phố'),
+                      value: selectedProvinceCode,
+                      items: _allProvinces
+                          .map((p) => DropdownMenuItem(
+                                value: p['province_code'].toString(),
+                                child: Text(p['name']),
+                              ))
+                          .toList(),
+                      onChanged: (val) {
+                        final province = _allProvinces.firstWhere(
+                            (p) => p['province_code'].toString() == val);
+                        setState(() {
+                          selectedProvinceCode = val;
+                          selectedProvinceName = province['name'];
+                          _displayWards = _allWards
+                              .where((w) =>
+                                  w['province_code'].toString() == val)
+                              .toList();
+                          selectedWardCode = null;
+                          selectedWardName = null;
+                        });
+                      },
+                      validator: (val) =>
+                          val == null ? 'Chọn Tỉnh/Thành' : null,
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Dropdown Phường
+                    DropdownButtonFormField<String>(
+                      decoration:
+                          _inputStyle('Phường / Xã / Thị trấn'),
+                      value: selectedWardCode,
+                      items: _displayWards
+                          .map((w) => DropdownMenuItem(
+                                value: w['ward_code'].toString(),
+                                child: Text(w['name']),
+                              ))
+                          .toList(),
+                      onChanged: (val) {
+                        final ward = _displayWards.firstWhere(
+                            (w) => w['ward_code'].toString() == val);
+                        setState(() {
+                          selectedWardCode = val;
+                          selectedWardName = ward['name'];
+                        });
+                      },
+                      validator: (val) =>
+                          val == null ? 'Chọn Phường/Xã' : null,
+                    ),
+                    const SizedBox(height: 12),
+
+                    TextFormField(
+                      controller: _streetCtrl,
+                      maxLines: 2,
+                      decoration:
+                          _inputStyle('Số nhà, tên đường, tổ/ấp...'),
+                      validator: (val) => val == null || val.isEmpty
+                          ? 'Vui lòng nhập địa chỉ cụ thể'
+                          : null,
+                    ),
+
+                    const SizedBox(height: 32),
+                    const Text('Phương thức thanh toán',
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 12),
+
+                    _buildPaymentOption(
+                        'COD', 'Thanh toán khi nhận hàng (COD)'),
+                    _buildPaymentOption(
+                        'Bank', 'Chuyển khoản ngân hàng (VietQR)'),
+
+                    // Tóm tắt giá
+                    const SizedBox(height: 24),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE8F1F0),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Tổng thanh toán',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 15)),
+                          Text(
+                            '${widget.product.price.toStringAsFixed(0)} VNĐ',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                              color: primaryTeal,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primaryTeal,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: _isSubmitting ? null : _submit,
+                        child: _isSubmitting
+                            ? const SizedBox(
+                                height: 22,
+                                width: 22,
+                                child: CircularProgressIndicator(
+                                    color: Colors.white, strokeWidth: 2),
+                              )
+                            : const Text('TIẾP TỤC',
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16)),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                ),
               ),
             ),
-          ),
     );
   }
 

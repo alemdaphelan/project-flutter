@@ -3,8 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 import 'register_screen.dart';
 import 'otp_screen.dart';
-import 'main_screen.dart';
 import 'profile_setup_screen.dart';
+import 'package:project_flutter/features/HomePage/screens/MainScreen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -62,7 +62,7 @@ class _LoginScreenState extends State<LoginScreen> {
       context,
       MaterialPageRoute(
         builder: (_) =>
-            hasProfile ? const MainScreen_Auth() : const ProfileSetupScreen(),
+            hasProfile ? const MainScreen() : const ProfileSetupScreen(),
       ),
       (route) => false,
     );
