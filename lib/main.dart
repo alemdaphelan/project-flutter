@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart' as config;
+import 'package:project_flutter/features/login-register/screens/login_screen.dart';
+
 import 'package:project_flutter/features/HomePage/screens/DetailListing.dart';
 import 'package:project_flutter/features/HomePage/Models/ProductDetailModel.dart';
 import 'package:project_flutter/features/HomePage/screens/UserProfile.dart';
@@ -10,31 +14,48 @@ import 'package:project_flutter/features/HomePage/screens/Notification.dart';
 import 'package:project_flutter/features/payment/screens/checkout_screen.dart';
 import 'package:project_flutter/features/payment/screens/order_status_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Khởi tạo Firebase bằng cách ép kiểu sang dynamic để bỏ qua xung đột hệ thống kiểu
+  await Firebase.initializeApp(
+    options: config.DefaultFirebaseOptions.currentPlatform,
+  );
+
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // Màu chủ đạo Teal mà bạn đã chọn cho module Thanh toán
-  static const Color oldieTeal = Color(0xFF1B6B60);
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Oldie App',
+      title: 'Selling App',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primaryColor: oldieTeal,
-        scaffoldBackgroundColor: const Color(0xFFF4F9F6),
+        primarySwatch: Colors.blue,
+        scaffoldBackgroundColor: Colors.white,
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.white,
-          elevation: 0,
-          iconTheme: IconThemeData(color: Colors.black87),
+          foregroundColor: Colors.black,
+          elevation: 1,
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         ),
       ),
-      home: const MainScreen(),
+      home: const LoginScreen(),   // Màn hình đầu tiên là Login
     );
   }
 }
@@ -607,7 +628,7 @@ class ProductCard extends StatelessWidget {
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
-                  ),
+                    ),
                 ),
                 const SizedBox(height: 10),
                 ClipRRect(
@@ -830,7 +851,6 @@ class CustomDrawer extends StatelessWidget {
     );
   }
 }
-
 
 class ChatDetailScreen extends StatelessWidget {
   const ChatDetailScreen({super.key});
