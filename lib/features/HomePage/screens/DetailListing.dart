@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:project_flutter/features/HomePage/Models/Product.dart';
 import 'package:project_flutter/features/payment/screens/checkout_screen.dart';
+import 'package:project_flutter/features/TinNhan/screens/chat_screen.dart';
+import 'package:project_flutter/features/TinNhan/services/firebase_chat_service.dart';
 
 class ProductDetailScreen extends StatelessWidget {
   final ProductModel product;
@@ -59,10 +61,7 @@ class ProductDetailScreen extends StatelessWidget {
     );
   }
 
-  // --- COMPONENT BUILDERS ---
-
   Widget _buildSellerInfo() {
-    // Kiểm tra URL ảnh đại diện hợp lệ
     final hasValidAvatar =
         product.seller != null && product.seller!.avatarUrl.isNotEmpty;
 
@@ -115,7 +114,6 @@ class ProductDetailScreen extends StatelessWidget {
         color: Colors.grey.shade100,
         borderRadius: BorderRadius.circular(12),
       ),
-      // ClipRRect giúp bo góc ảnh
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: CachedNetworkImage(
@@ -271,7 +269,39 @@ class ProductDetailScreen extends StatelessWidget {
             Expanded(
               flex: 4,
               child: OutlinedButton(
-                onPressed: () {},
+                onPressed: () async {
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (c) => const Center(child: CircularProgressIndicator()),
+                  );
+
+                  final chatService = FirebaseChatService();
+                  String myCurrentUserId = "buyer_id_001";
+                  
+                  String roomId = await chatService.getOrCreateChatRoom(
+                    buyerId: myCurrentUserId,
+                    sellerId: product.sellerId,
+                    productName: product.productName,
+                    sellerName: product.sellerName ?? "Người bán",
+                    isOffer: false,
+                  );
+
+                  if (context.mounted) Navigator.pop(context);
+
+                  if (roomId.isNotEmpty && context.mounted) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ChatScreen(
+                          chatRoomId: roomId,
+                          isSellerViewInit: false, 
+                          titleName: product.sellerName ?? "Người bán", 
+                        ),
+                      ),
+                    );
+                  }
+                },
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.grey.shade700,
                   side: BorderSide(color: Colors.grey.shade400),
@@ -293,7 +323,42 @@ class ProductDetailScreen extends StatelessWidget {
             Expanded(
               flex: 3,
               child: OutlinedButton(
-                onPressed: () {},
+                onPressed: () async {
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (c) => const Center(child: CircularProgressIndicator()),
+                  );
+
+                  final chatService = FirebaseChatService();
+                  String myCurrentUserId = "buyer_id_001";
+                  
+                  String roomId = await chatService.getOrCreateChatRoom(
+                    buyerId: myCurrentUserId,
+                    sellerId: product.sellerId,
+                    productName: product.productName,
+                    sellerName: product.sellerName ?? "Người bán",
+                    isOffer: false,
+                  );
+
+                  if (context.mounted) Navigator.pop(context);
+
+                  if (roomId.isNotEmpty && context.mounted) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ChatScreen(
+                          chatRoomId: roomId,
+                          isSellerViewInit: false, 
+                          titleName: product.sellerName ?? "Người bán",
+                          autoShowOffer: true,
+                          initOfferPrice: product.price,
+                          initOfferImageUrl: product.productImageUrl,
+                        ),
+                      ),
+                    );
+                  }
+                },
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFFD4A017),
                   side: const BorderSide(color: Color(0xFFD4A017)),

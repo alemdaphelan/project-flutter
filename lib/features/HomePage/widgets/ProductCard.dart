@@ -4,6 +4,8 @@ import 'package:project_flutter/features/HomePage/screens/UserProfile.dart';
 import 'package:project_flutter/features/HomePage/screens/DetailListing.dart';
 import 'package:project_flutter/features/payment/screens/checkout_screen.dart';
 import 'package:project_flutter/features/HomePage/utils/timeFormat.dart';
+import 'package:project_flutter/features/TinNhan/screens/chat_screen.dart';
+import 'package:project_flutter/features/TinNhan/services/firebase_chat_service.dart';
 
 class ProductCard extends StatelessWidget {
   final ProductModel product;
@@ -50,30 +52,33 @@ class ProductCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    sellerEmail,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      sellerEmail,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  Text(
-                    '@${sellerName.replaceAll(" ", "").toLowerCase()}',
-                    style: const TextStyle(color: Colors.grey, fontSize: 12),
-                  ),
-                ],
+                    Text(
+                      '@${sellerName.replaceAll(" ", "").toLowerCase()}',
+                      style: const TextStyle(color: Colors.grey, fontSize: 12),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
               ),
-              const Spacer(),
+              const SizedBox(width: 10),
               Text(
                 formatTimeAgo(DateTime.parse(product.time)),
-                style: TextStyle(color: Colors.grey, fontSize: 12),
+                style: const TextStyle(color: Colors.grey, fontSize: 12),
               ),
             ],
           ),
-
           const SizedBox(height: 12),
           GestureDetector(
             onTap: () => Navigator.push(
@@ -166,7 +171,7 @@ class ProductCard extends StatelessWidget {
                   onPressed: () => Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => CheckoutScreen(isBuyer: true),
+                      builder: (_) => const CheckoutScreen(isBuyer: true),
                     ),
                   ),
                   icon: const Icon(
@@ -191,10 +196,39 @@ class ProductCard extends StatelessWidget {
               Expanded(
                 flex: 4,
                 child: OutlinedButton.icon(
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const ChatDetailScreen()),
-                  ),
+                  onPressed: () async {
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (c) => const Center(child: CircularProgressIndicator()),
+                    );
+
+                    final chatService = FirebaseChatService();
+                    String myCurrentUserId = "buyer_id_001";
+                    
+                    String roomId = await chatService.getOrCreateChatRoom(
+                      buyerId: myCurrentUserId,
+                      sellerId: product.sellerId,
+                      productName: product.productName,
+                      sellerName: product.sellerName,
+                      isOffer: false,
+                    );
+
+                    if (context.mounted) Navigator.pop(context);
+
+                    if (roomId.isNotEmpty && context.mounted) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ChatScreen(
+                            chatRoomId: roomId,
+                            isSellerViewInit: false, 
+                            titleName: product.sellerName, 
+                          ),
+                        ),
+                      );
+                    }
+                  },
                   icon: const Icon(
                     Icons.chat_outlined,
                     size: 16,
@@ -217,10 +251,42 @@ class ProductCard extends StatelessWidget {
               Expanded(
                 flex: 3,
                 child: OutlinedButton.icon(
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const MakeOfferScreen()),
-                  ),
+                  onPressed: () async {
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (c) => const Center(child: CircularProgressIndicator()),
+                    );
+
+                    final chatService = FirebaseChatService();
+                    String myCurrentUserId = "buyer_id_001";
+                    
+                    String roomId = await chatService.getOrCreateChatRoom(
+                      buyerId: myCurrentUserId,
+                      sellerId: product.sellerId,
+                      productName: product.productName,
+                      sellerName: product.sellerName,
+                      isOffer: false,
+                    );
+
+                    if (context.mounted) Navigator.pop(context);
+
+                    if (roomId.isNotEmpty && context.mounted) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ChatScreen(
+                            chatRoomId: roomId,
+                            isSellerViewInit: false, 
+                            titleName: product.sellerName,
+                            autoShowOffer: true,
+                            initOfferPrice: product.price,
+                            initOfferImageUrl: product.productImageUrl,
+                          ),
+                        ),
+                      );
+                    }
+                  },
                   icon: const Icon(
                     Icons.local_offer_outlined,
                     size: 16,
@@ -243,32 +309,6 @@ class ProductCard extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class MakeOfferScreen extends StatelessWidget {
-  const MakeOfferScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Thương lượng giá')),
-      body: const Center(
-        child: Text('Tính năng thương lượng sẽ được phát triển sau!'),
-      ),
-    );
-  }
-}
-
-class ChatDetailScreen extends StatelessWidget {
-  const ChatDetailScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Chat với người bán')),
-      body: const Center(child: Text('Tính năng chat sẽ được phát triển sau!')),
     );
   }
 }

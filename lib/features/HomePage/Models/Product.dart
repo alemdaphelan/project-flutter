@@ -2,6 +2,7 @@ import 'package:project_flutter/features/HomePage/Models/UserProfile.dart';
 
 class ProductModel {
   final String sellerId;
+  final String sellerName;
   final String time;
   final String productImageUrl;
   final String productName;
@@ -15,6 +16,7 @@ class ProductModel {
 
   ProductModel({
     required this.sellerId,
+    required this.sellerName,
     required this.time,
     required this.productImageUrl,
     required this.productName,
@@ -28,6 +30,7 @@ class ProductModel {
   factory ProductModel.FromFirestore(Map<String, dynamic> data, String id) {
     return ProductModel(
       sellerId: data['sellerId'] ?? '',
+      sellerName: data['sellerName'] ?? 'Người bán',
       time: data['time'].toDate().toString(),
       productImageUrl: data['image'] ?? '',
       productName: data['name'] ?? '',

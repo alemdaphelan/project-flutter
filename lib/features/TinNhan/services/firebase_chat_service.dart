@@ -8,12 +8,10 @@ class FirebaseChatService {
   final String _imgBBKey = "3bed019711c18249979407b1683a75f6"; 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Lấy danh sách các phòng chat thật từ Firestore
   Stream<QuerySnapshot> getChatRoomsStream() {
     return _firestore.collection('chats').orderBy('timestamp', descending: true).snapshots();
   }
 
-  // Tạo phòng chat mới
   Future<String> createNewChat() async {
     DocumentReference doc = await _firestore.collection('chats').add({
       'otherUserName': 'Khách hàng ${DateTime.now().second}',
@@ -21,6 +19,65 @@ class FirebaseChatService {
       'timestamp': FieldValue.serverTimestamp(),
     });
     return doc.id;
+  }
+
+  Future<String> getOrCreateChatRoom({
+    required String buyerId,
+    required String sellerId,
+    required String productName,
+    required String sellerName,
+    bool isOffer = false,
+    double? productPrice,
+    String? productImageUrl,
+  }) async {
+    try {
+      QuerySnapshot snapshot = await _firestore.collection('chats')
+          .where('buyerId', isEqualTo: buyerId)
+          .where('sellerId', isEqualTo: sellerId)
+          .where('productName', isEqualTo: productName)
+          .limit(1)
+          .get();
+
+      if (snapshot.docs.isNotEmpty) {
+        return snapshot.docs.first.id;
+      } else {
+        DocumentReference doc = await _firestore.collection('chats').add({
+          'buyerId': buyerId,
+          'sellerId': sellerId,
+          'productName': productName,
+          'otherUserName': sellerName, 
+          'lastMessage': isOffer ? '[Đề xuất giá]: $productName' : '[Yêu cầu tư vấn]: $productName',
+          'timestamp': FieldValue.serverTimestamp(),
+        });
+        
+        if (isOffer && productPrice != null) {
+          await doc.collection('messages').add({
+             'senderId': buyerId,
+             'receiverId': sellerId,
+             'content': 'Tôi muốn đề xuất giá cho: $productName',
+             'type': 'offer',
+             'timestamp': FieldValue.serverTimestamp(),
+             'offerDetails': {
+               'price': productPrice,
+               'productImageUrl': productImageUrl,
+               'status': 'pending'
+             }
+          });
+        } else {
+          await doc.collection('messages').add({
+             'senderId': buyerId,
+             'receiverId': sellerId,
+             'content': 'Tôi muốn hỏi mua: $productName',
+             'type': 'text',
+             'timestamp': FieldValue.serverTimestamp(),
+          });
+        }
+        
+        return doc.id;
+      }
+    } catch (e) {
+      return "";
+    }
   }
 
   Future<String?> uploadToImgBB(File imageFile) async {
@@ -32,7 +89,8 @@ class FirebaseChatService {
         final data = json.decode(await response.stream.bytesToString());
         return data['data']['url'];
       }
-    } catch (e) { print("Lỗi ImgBB: $e"); }
+    } catch (e) { 
+    }
     return null;
   }
 
@@ -54,21 +112,16 @@ class FirebaseChatService {
     await _firestore.collection('chats').doc(chatRoomId).collection('messages').doc(msgId).update({'offerDetails.status': status});
   }
 
-  // Hàm xóa vĩnh viễn phòng chat và toàn bộ lịch sử tin nhắn
   Future<void> deleteChat(String chatRoomId) async {
     try {
-      // Lấy toàn bộ tin nhắn bên trong phòng chat này
       var messages = await _firestore.collection('chats').doc(chatRoomId).collection('messages').get();
       
-      // Xóa từng tin nhắn một
       for (var doc in messages.docs) {
         await doc.reference.delete();
       }
 
-      // Xóa phòng chat
       await _firestore.collection('chats').doc(chatRoomId).delete();
     } catch (e) {
-      print("Lỗi khi xóa chat: $e");
     }
   }
 }

@@ -22,7 +22,6 @@ class _MainScreenState extends State<MainScreen_Chat> {
   String _selectedFilter = "Tất cả";
   DateTime? _selectedDate;
 
-  // Làm nổi bật từ khóa tìm kiếm trong đoạn văn bản
   Widget _highlightText(String text, String query) {
     if (query.isEmpty || !text.toLowerCase().contains(query.toLowerCase())) {
       return Text(
@@ -54,7 +53,6 @@ class _MainScreenState extends State<MainScreen_Chat> {
     );
   }
 
-  // Xây dựng giao diện chính của màn hình danh sách Chat
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -202,7 +200,6 @@ class _MainScreenState extends State<MainScreen_Chat> {
                     .map((d) => ChatRoom.fromFirestore(d))
                     .toList();
 
-                // LỌC: Loại bỏ các hội thoại đã bị ẩn khỏi danh sách
                 rooms = rooms
                     .where(
                       (r) => !ChatExtensionService.hiddenChatIds.contains(r.id),
@@ -249,14 +246,20 @@ class _MainScreenState extends State<MainScreen_Chat> {
                       DateFormat('HH:mm').format(rooms[i].timestamp.toDate()),
                       style: const TextStyle(fontSize: 12, color: Colors.grey),
                     ),
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (c) => ChatScreen(chatRoomId: rooms[i].id),
-                      ),
-                    ),
-
-                    // Kích hoạt menu tùy chọn và cập nhật UI khi có thao tác Ẩn/Xóa
+                    onTap: () {
+                      String myCurrentUserId = "buyer_id_001"; 
+                      
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (c) => ChatScreen(
+                            chatRoomId: rooms[i].id,
+                            isSellerViewInit: false, 
+                            titleName: rooms[i].otherUserName,
+                          ),
+                        ),
+                      );
+                    },
                     onLongPress: () => ChatExtensionService.showChatOptions(
                       context,
                       rooms[i].id,
@@ -277,14 +280,19 @@ class _MainScreenState extends State<MainScreen_Chat> {
           String id = await _chatService.createNewChat();
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (c) => ChatScreen(chatRoomId: id)),
+            MaterialPageRoute(
+              builder: (c) => ChatScreen(
+                chatRoomId: id,
+                isSellerViewInit: false,
+                titleName: "Trò chuyện mới",
+              )
+            ),
           );
         },
       ),
     );
   }
 
-  // Giao diện hiển thị khi danh sách trống
   Widget _buildEmptyState() {
     return Center(
       child: Column(

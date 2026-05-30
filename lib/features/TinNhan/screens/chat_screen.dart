@@ -12,7 +12,21 @@ import '../services/chat_extension_service.dart';
 
 class ChatScreen extends StatefulWidget {
   final String chatRoomId;
-  const ChatScreen({Key? key, required this.chatRoomId}) : super(key: key);
+  final bool isSellerViewInit;
+  final String titleName;
+  final bool autoShowOffer;
+  final double? initOfferPrice;
+  final String? initOfferImageUrl;
+
+  const ChatScreen({
+    Key? key,
+    required this.chatRoomId,
+    this.isSellerViewInit = false,
+    this.titleName = "Trò chuyện",
+    this.autoShowOffer = false,
+    this.initOfferPrice,
+    this.initOfferImageUrl,
+  }) : super(key: key);
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -22,11 +36,24 @@ class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _pController = TextEditingController();
   final TextEditingController _msgController = TextEditingController();
   final FirebaseChatService _chatService = FirebaseChatService();
-  bool isSellerView = false;
+  
+  late bool isSellerView;
   File? _offerImage;
 
-  // Mở hộp thoại (Dialog) cho phép người dùng đính kèm ảnh và nhập giá đề xuất
-  void _showOfferDialog() {
+  @override
+  void initState() {
+    super.initState();
+    isSellerView = widget.isSellerViewInit;
+    
+    if (widget.autoShowOffer) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _pController.text = widget.initOfferPrice?.toInt().toString() ?? '';
+        _showOfferDialog(existingImageUrl: widget.initOfferImageUrl);
+      });
+    }
+  }
+
+  void _showOfferDialog({String? existingImageUrl}) {
     _offerImage = null;
     showDialog(
       context: context,
@@ -53,12 +80,17 @@ class _ChatScreenState extends State<ChatScreen> {
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: Colors.grey[300]!),
                   ),
-                  child: _offerImage == null
-                      ? const Icon(Icons.add_a_photo, color: Colors.grey)
-                      : ClipRRect(
+                  child: _offerImage != null
+                      ? ClipRRect(
                           borderRadius: BorderRadius.circular(10),
                           child: Image.file(_offerImage!, fit: BoxFit.cover),
-                        ),
+                        )
+                      : (existingImageUrl != null && existingImageUrl.isNotEmpty)
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: Image.network(existingImageUrl, fit: BoxFit.cover),
+                            )
+                          : const Icon(Icons.add_a_photo, color: Colors.grey),
                 ),
               ),
               const SizedBox(height: 15),
@@ -77,7 +109,7 @@ class _ChatScreenState extends State<ChatScreen> {
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFFCE00)),
               onPressed: () async {
-                String? imgUrl;
+                String? imgUrl = existingImageUrl;
                 if (_offerImage != null) {
                   imgUrl = await _chatService.uploadToImgBB(_offerImage!);
                 }
@@ -107,7 +139,6 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  // Xây dựng giao diện toàn bộ màn hình Chat
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -116,7 +147,19 @@ class _ChatScreenState extends State<ChatScreen> {
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(isSellerView ? "Đang test: NGƯỜI BÁN" : "Đang test: NGƯỜI MUA"),
+        title: FutureBuilder<DocumentSnapshot>(
+          future: FirebaseFirestore.instance.collection('chats').doc(widget.chatRoomId).get(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) return Text(widget.titleName);
+            var data = snapshot.data!.data() as Map<String, dynamic>?;
+            if (data == null) return Text(widget.titleName);
+
+            String buyer = data['buyerId'] ?? 'Người mua';
+            String seller = data['otherUserName'] ?? widget.titleName;
+
+            return Text(isSellerView ? buyer : seller);
+          },
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.swap_horiz),
@@ -150,9 +193,9 @@ class _ChatScreenState extends State<ChatScreen> {
                         onReject: () => _chatService.updateOfferStatus(widget.chatRoomId, m.id!, 'rejected'),
                         onEdit: () {
                           _pController.text = m.offer!.price.toInt().toString();
-                          _showOfferDialog();
+                          _showOfferDialog(existingImageUrl: m.offer!.productImageUrl);
                         },
-                        onPay: () => print("Thanh toán"),
+                        onPay: () {},
                       );
                     }
                     return ChatBubble(message: m, isMe: isMe);
@@ -163,8 +206,6 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           ChatInput(
             controller: _msgController, 
-            
-            // Xử lý gửi tin nhắn văn bản và tự động phản hồi (nếu đối phương đang bật Bot)
             onSendText: () async {
               if (_msgController.text.trim().isEmpty) return;
 
@@ -198,8 +239,6 @@ class _ChatScreenState extends State<ChatScreen> {
                 });
               }
             },
-            
-            // Xử lý chọn ảnh, upload lên ImgBB, gửi đi và tự động phản hồi (nếu đối phương bật Bot)
             onSendImage: () async {
               final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
               if (pickedFile == null) return; 
@@ -245,8 +284,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 );
               }
             },
-            
-            onSendOffer: _showOfferDialog,
+            onSendOffer: () => _showOfferDialog(),
           ),
         ],
       ),

@@ -6,6 +6,7 @@ import 'package:project_flutter/features/TinNhan/screens/management_screens.dart
 import 'package:project_flutter/features/HomePage/widgets/ProductList.dart';
 import 'package:project_flutter/features/HomePage/screens/Notification.dart';
 import 'package:project_flutter/features/HomePage/screens/CreatePost.dart';
+import 'package:project_flutter/features/TinNhan/screens/main_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -53,7 +54,7 @@ class _MainScreenState extends State<MainScreen> {
       });
       await Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => const CategoryManagementScreen()),
+        MaterialPageRoute(builder: (_) => const MainScreen_Chat()),
       );
       setState(() => _selectedIndex = 0);
     } else if (index == 4) {
