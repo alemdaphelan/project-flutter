@@ -6,12 +6,13 @@ import 'package:project_flutter/features/payment/screens/orders_hub_screen.dart'
 import 'package:project_flutter/features/payment/models/OrderModel.dart';
 import 'package:project_flutter/features/payment/services/OrderService.dart';
 import 'package:project_flutter/features/HomePage/widgets/ProductList.dart';
-import 'package:project_flutter/features/HomePage/screens/Notification.dart';
+import 'package:project_flutter/features/Notification/NotificationScreen.dart';
 import 'package:project_flutter/features/HomePage/screens/CreatePost.dart';
 import 'package:project_flutter/features/TinNhan/screens/main_screen.dart';
 //moi them
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:project_flutter/features/login-register/screens/login_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class MainScreen extends StatefulWidget {
   final User user;
@@ -73,12 +74,14 @@ class _MainScreenState extends State<MainScreen> {
       setState(() {
         _selectedIndex = index;
       });
+
       await Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => NotificationScreen(notifications: []),
+          builder: (_) => NotificationScreen(userId: widget.user.uid),
         ),
       );
+
       setState(() => _selectedIndex = 0);
     }
   }
@@ -209,11 +212,13 @@ class _MainScreenState extends State<MainScreen> {
                     // Đếm đơn cần hành động:
                     // Người bán: đơn pending chưa gửi
                     // Người mua: đơn shipping cần confirm
-                    final sellerPending = sellerSnap.data
+                    final sellerPending =
+                        sellerSnap.data
                             ?.where((o) => o.status == OrderStatus.pending)
                             .length ??
                         0;
-                    final buyerShipping = buyerSnap.data
+                    final buyerShipping =
+                        buyerSnap.data
                             ?.where((o) => o.status == OrderStatus.shipping)
                             .length ??
                         0;
@@ -233,11 +238,15 @@ class _MainScreenState extends State<MainScreen> {
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               constraints: const BoxConstraints(
-                                  minWidth: 14, minHeight: 14),
+                                minWidth: 14,
+                                minHeight: 14,
+                              ),
                               child: Text(
                                 '$total',
                                 style: const TextStyle(
-                                    color: Colors.white, fontSize: 8),
+                                  color: Colors.white,
+                                  fontSize: 8,
+                                ),
                                 textAlign: TextAlign.center,
                               ),
                             ),
@@ -256,30 +265,56 @@ class _MainScreenState extends State<MainScreen> {
             label: 'Tin nhắn',
           ),
           BottomNavigationBarItem(
-            icon: Stack(
-              children: [
-                const Icon(Icons.notifications_none),
-                Positioned(
-                  right: 0,
-                  top: 0,
-                  child: Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    constraints: const BoxConstraints(
-                      minWidth: 12,
-                      minHeight: 12,
-                    ),
-                    child: const Text(
-                      '3',
-                      style: TextStyle(color: Colors.white, fontSize: 8),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-              ],
+            icon: StreamBuilder<QuerySnapshot>(
+              // BƯỚC ĐI KỸ SƯ: Mở đường ống Stream hứng data liên tục từ Firebase
+              stream: firestore.getNotificationsStream(widget.user.uid),
+              builder: (context, snapshot) {
+                int unreadCount = 0;
+
+                // Nếu có data trả về từ mây
+                if (snapshot.hasData) {
+                  // Đếm xem có bao nhiêu cái thông báo mang mác "chưa đọc" (isRead == false)
+                  unreadCount = snapshot.data!.docs.where((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    return data['isRead'] == false;
+                  }).length;
+                }
+
+                return Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    const Icon(Icons.notifications_none),
+
+                    // CHỈ VẼ CÁI CHẤM ĐỎ KHI CÓ THÔNG BÁO CHƯA ĐỌC
+                    if (unreadCount > 0)
+                      Positioned(
+                        right: -2,
+                        top: -2,
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 16,
+                            minHeight: 16,
+                          ),
+                          child: Text(
+                            // UX Hàng hiệu: Nhiều quá thì hiện 99+ cho khỏi bể giao diện
+                            unreadCount > 99 ? '99+' : '$unreadCount',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
             ),
             label: 'Thông báo',
           ),

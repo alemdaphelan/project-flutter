@@ -2,11 +2,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:project_flutter/firestore_service.dart';
-// QUAN TRỌNG: Phải import cái ProductModel vào để xài
 import 'package:project_flutter/features/HomePage/Models/Product.dart';
 
 class CreatePostScreen extends StatefulWidget {
-  // Bắt buộc truyền ID người đăng vào
   final String userId;
   final String userName;
   const CreatePostScreen({
@@ -23,19 +21,30 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   final _formKey = GlobalKey<FormState>();
   final FirestoreService _firestoreService = FirestoreService();
 
-  // Quản lý input
+  // Controller cố định
   final _nameController = TextEditingController();
   final _priceController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _locationController = TextEditingController();
 
-  String _selectedCategory = 'Phone';
-  bool _isLoading = false;
+  // Quản lý trạng thái nạp dữ liệu từ Firebase
+  List<Map<String, dynamic>> _firebaseCategories = [];
+  String? _selectedCategory;
+  bool _isLoading =
+      true; // Ban đầu bật loading để đợi nạp categories từ Firebase
 
   File? _pickedImage;
   final ImagePicker _picker = ImagePicker();
 
-  final List<String> _categories = ['Phone', 'Laptop', 'Monitor', 'Gear'];
+  // Nơi quản lý đống Controller động
+  final Map<String, TextEditingController> _dynamicControllers = {};
+
+  @override
+  void initState() {
+    super.initState();
+    // VỪA MỞ MÀN HÌNH: Đi bốc danh mục từ Firebase về liền
+    _loadCategoriesFromFirebase();
+  }
 
   @override
   void dispose() {
@@ -43,17 +52,69 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     _priceController.dispose();
     _descriptionController.dispose();
     _locationController.dispose();
+    _disposeDynamicFields();
     super.dispose();
   }
 
-  // Hàm chọn ảnh từ máy
+  // Hàm nạp danh mục từ Firestore Service của mày
+  void _loadCategoriesFromFirebase() async {
+    try {
+      // Gọi lại cái hàm getCategories() có sẵn trong file firestore_service.dart của mày
+      List<Map<String, dynamic>> cats = await _firestoreService.getCategories();
+
+      setState(() {
+        _firebaseCategories = cats;
+        if (_firebaseCategories.isNotEmpty) {
+          // Chọn mặc định là cái danh mục đầu tiên bốc được trên Firebase về
+          _selectedCategory = _firebaseCategories.first['name'];
+          // Đẻ ô nhập liệu cho danh mục đó
+          _initDynamicFields();
+        }
+        _isLoading = false; // Tải xong rồi thì tắt màn hình chờ
+      });
+    } catch (e) {
+      print("Lỗi nạp danh mục từ Firebase: $e");
+      setState(() => _isLoading = false);
+    }
+  }
+
+  // Hàm lấy ra danh sách fields (Array) từ cái danh mục đang được chọn
+  List<String> _getCurrentFields() {
+    if (_selectedCategory == null) return [];
+    // Tìm trong đống data Firebase xem thằng nào có name trùng với thằng đang chọn
+    final currentCat = _firebaseCategories.firstWhere(
+      (cat) => cat['name'] == _selectedCategory,
+      orElse: () => {},
+    );
+    // Ép kiểu dữ liệu Array từ Firebase (List<dynamic>) về thành List<String> của Dart
+    if (currentCat.containsKey('fields') && currentCat['fields'] != null) {
+      return List<String>.from(currentCat['fields']);
+    }
+    return [];
+  }
+
+  // Tự động sinh controller dựa trên mảng bốc từ Firebase về
+  void _initDynamicFields() {
+    _disposeDynamicFields();
+    final fields = _getCurrentFields();
+    for (var fieldName in fields) {
+      _dynamicControllers[fieldName] = TextEditingController();
+    }
+  }
+
+  void _disposeDynamicFields() {
+    _dynamicControllers.forEach((key, controller) {
+      controller.dispose();
+    });
+    _dynamicControllers.clear();
+  }
+
   Future<void> _pickImage() async {
     try {
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
         imageQuality: 80,
       );
-
       if (image != null) {
         setState(() {
           _pickedImage = File(image.path);
@@ -66,10 +127,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     }
   }
 
-  // Logic Đăng bài cực kỳ gọn gàng
   void _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
-
     if (_pickedImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Vui lòng chọn hình ảnh sản phẩm!')),
@@ -82,38 +141,45 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     });
 
     try {
-      // 1. Lưu ảnh local
       String localImagePath = await _firestoreService.saveImageToLocalStorage(
         _pickedImage!,
       );
 
-      // 2. Khởi tạo Object Model (Tránh lỗi hardcode Map)
+      // Gom toàn bộ data thông số động
+      Map<String, dynamic> specificationsMap = {};
+      _dynamicControllers.forEach((fieldName, controller) {
+        specificationsMap[fieldName] = controller.text.trim();
+      });
+
       ProductModel newProduct = ProductModel(
         sellerId: widget.userId,
+        sellerName: '',
         time: '',
         productImageUrl: localImagePath,
         productName: _nameController.text.trim(),
         price: double.parse(_priceController.text.trim()),
-        specifications: {},
+        specifications:
+            specificationsMap, // Cục map động chui vào fields trên Firebase
         description: _descriptionController.text.trim(),
         location: _locationController.text.trim(),
-        category: _selectedCategory,
+        category: _selectedCategory ?? 'Other',
       );
 
-      // 3. Chuyển thành Map an toàn và bắn lên server
       await _firestoreService.addProduct(newProduct.toMap());
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('🎉 Đăng bán sản phẩm thành công!')),
+          const SnackBar(
+            content: Text('🎉 Đăng bán sản phẩm real-time thành công!'),
+          ),
         );
-        Navigator.pop(context); // Tắt màn hình quay về trang trước
+        Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('❌ Lỗi hệ thống: $e')));
+        ).showSnackBar(SnackBar(content: Text('❌ Lỗi: $e')));
       }
     } finally {
       if (mounted) {
@@ -146,6 +212,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
+      // Nếu đang đợi Firebase trả data về thì hiện vòng xoay, có data rồi mới vẽ giao diện
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: primaryTeal))
           : SingleChildScrollView(
@@ -155,7 +222,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // --- KHU VỰC ẢNH ---
+                    // --- SECTION HÌNH ẢNH ---
                     const Text(
                       'Hình ảnh sản phẩm',
                       style: TextStyle(
@@ -193,7 +260,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    'Bấm vào đây để chọn ảnh từ máy',
+                                    'Bấm vào đây để chọn ảnh',
                                     style: TextStyle(
                                       color: Colors.grey.shade500,
                                       fontSize: 14,
@@ -205,7 +272,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // --- KHU VỰC THÔNG TIN ---
+                    // --- SECTION THÔNG TIN CƠ BẢN ---
                     _buildTextField(
                       controller: _nameController,
                       label: 'Tên sản phẩm',
@@ -229,8 +296,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                     ),
                     const SizedBox(height: 16),
 
+                    // --- DROPDOWN DANH MỤC LẤY ĐỘNG TỪ FIREBASE ---
                     const Text(
-                      'Danh mục',
+                      'Danh mục sản phẩm',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
@@ -248,22 +316,32 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                         child: DropdownButton<String>(
                           value: _selectedCategory,
                           isExpanded: true,
-                          items: _categories.map((String cat) {
+                          // MAP DANH SÁCH DROPDOWN TỪ FIREBASE ĐỔ VỀ
+                          items: _firebaseCategories.map((cat) {
+                            String name = cat['name'] ?? 'Unknown';
                             return DropdownMenuItem<String>(
-                              value: cat,
-                              child: Text(cat),
+                              value: name,
+                              child: Text(name),
                             );
                           }).toList(),
                           onChanged: (String? newValue) {
-                            setState(() {
-                              _selectedCategory = newValue!;
-                            });
+                            if (newValue != null) {
+                              setState(() {
+                                _selectedCategory = newValue;
+                                // Đổi danh mục -> Tính toán lại và sinh bộ controller mới từ mảng Firebase
+                                _initDynamicFields();
+                              });
+                            }
                           },
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 24),
 
+                    // --- SECTION THUỘC TÍNH ĐỘNG ---
+                    _buildDynamicFieldsSection(),
+
+                    // --- SECTION THÔNG TIN KHÁC ---
                     _buildTextField(
                       controller: _locationController,
                       label: 'Địa chỉ nơi bán',
@@ -312,7 +390,59 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     );
   }
 
-  // Component tái sử dụng để vẽ ô nhập liệu
+  Widget _buildDynamicFieldsSection() {
+    // Gọi hàm bốc mảng String từ data Firebase của category hiện tại
+    final fields = _getCurrentFields();
+    if (fields.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEAF4F2),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFB9DDD6)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.tune, color: Color(0xFF1B6B60), size: 18),
+              const SizedBox(width: 8),
+              Text(
+                'Thông số chi tiết của $_selectedCategory',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: Color(0xFF1B6B60),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: fields.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              String fieldName = fields[index];
+              return _buildTextField(
+                // Bốc đúng controller động tương ứng với tên trường từ Firebase
+                controller: _dynamicControllers[fieldName]!,
+                label: fieldName,
+                hint: 'Nhập $fieldName...',
+                validator: (v) =>
+                    v!.isEmpty ? 'Không được bỏ trống trường này' : null,
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,

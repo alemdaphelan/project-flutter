@@ -4,6 +4,7 @@ import 'package:path/path.dart' as p;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:project_flutter/features/HomePage/Models/Product.dart';
 import 'package:project_flutter/shared/models/user_profile.dart';
+import 'package:project_flutter/features/Review/ReviewModel.dart';
 
 // Tự tạo một class để lưu cấu hình, an toàn tuyệt đối
 class CloudinaryConfig {
@@ -116,5 +117,77 @@ class FirestoreService {
 
     // 5. Trả về cái đường dẫn chuỗi (Local Path) để mày lưu vào Firestore
     return localImage.path;
+  }
+
+  // Hàm đẩy 1 cái đánh giá lên Firebase
+  Future<void> addReview(Map<String, dynamic> reviewData) async {
+    try {
+      String reviewerId = reviewData['reviewerId'];
+      String sellerId = reviewData['sellerId'];
+      String customDocId = "${reviewerId}_${sellerId}";
+      await _firestore.collection('reviews').doc(customDocId).set(reviewData);
+    } catch (e) {
+      print('❌ Lỗi thêm đánh giá: $e');
+      rethrow;
+    }
+  }
+
+  Future<List<ReviewModel>> getReviewsForSeller(String sellerId) async {
+    try {
+      QuerySnapshot snapshot = await _firestore
+          .collection('reviews')
+          .where('sellerId', isEqualTo: sellerId)
+          .orderBy('time', descending: true)
+          .get();
+
+      List<ReviewModel> reviews = [];
+      for (var doc in snapshot.docs) {
+        try {
+          reviews.add(
+            ReviewModel.fromFirestore(
+              doc.data() as Map<String, dynamic>,
+              doc.id,
+            ),
+          );
+        } catch (e) {
+          print('❌ Lỗi data review ID [${doc.id}]: $e');
+        }
+      }
+
+      await Future.wait(
+        reviews.map((review) async {
+          if (review.reviewerId.isNotEmpty) {
+            review.reviewer = await getUserProfile(review.reviewerId);
+          }
+        }),
+      );
+
+      return reviews;
+    } catch (e) {
+      print('❌ Lỗi lấy danh sách đánh giá: $e');
+      return [];
+    }
+  }
+
+  Future<void> sendNotification(Map<String, dynamic> notiData) async {
+    try {
+      await _firestore.collection('notifications').add(notiData);
+    } catch (e) {
+      print('❌ Lỗi gửi thông báo: $e');
+    }
+  }
+
+  Stream<QuerySnapshot> getNotificationsStream(String userId) {
+    return _firestore
+        .collection('notifications')
+        .where('userId', isEqualTo: userId)
+        .orderBy('createdAt', descending: true)
+        .snapshots(); // Điểm ăn tiền của Realtime!
+  }
+
+  Future<void> markNotificationAsRead(String notiId) async {
+    await _firestore.collection('notifications').doc(notiId).update({
+      'isRead': true,
+    });
   }
 }
