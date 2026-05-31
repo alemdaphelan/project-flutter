@@ -90,7 +90,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       // 2. Khởi tạo Object Model (Tránh lỗi hardcode Map)
       ProductModel newProduct = ProductModel(
         sellerId: widget.userId,
-        sellerName: widget.userName,
         time: '',
         productImageUrl: localImagePath,
         productName: _nameController.text.trim(),

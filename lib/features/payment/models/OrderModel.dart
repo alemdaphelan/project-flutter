@@ -54,6 +54,7 @@ class OrderModel {
   final String paymentMethod;   // "COD" | "Bank"
 
   // Vận chuyển
+  final String carrierName;     // tên đơn vị vận chuyển, vd: "GHTK", "GHN", "ViettelPost"
   final String trackingNumber;  // mã vận đơn — rỗng khi chưa gửi
 
   // Trạng thái
@@ -73,6 +74,7 @@ class OrderModel {
     required this.receiverPhone,
     required this.deliveryAddress,
     required this.paymentMethod,
+    this.carrierName = '',
     this.trackingNumber = '',
     this.status = OrderStatus.pending,
     required this.createdAt,
@@ -92,6 +94,7 @@ class OrderModel {
       receiverPhone: map['receiverPhone'] ?? '',
       deliveryAddress: map['deliveryAddress'] ?? '',
       paymentMethod: map['paymentMethod'] ?? 'COD',
+      carrierName: map['carrierName'] ?? '',
       trackingNumber: map['trackingNumber'] ?? '',
       status: OrderStatusX.fromString(map['status'] ?? 'pending'),
       createdAt: map['createdAt'] != null
@@ -115,6 +118,7 @@ class OrderModel {
       'receiverPhone': receiverPhone,
       'deliveryAddress': deliveryAddress,
       'paymentMethod': paymentMethod,
+      'carrierName': carrierName,
       'trackingNumber': trackingNumber,
       'status': status.name,
       'createdAt': FieldValue.serverTimestamp(),
@@ -123,6 +127,7 @@ class OrderModel {
   }
 
   OrderModel copyWith({
+    String? carrierName,
     String? trackingNumber,
     OrderStatus? status,
   }) {
@@ -138,6 +143,7 @@ class OrderModel {
       receiverPhone: receiverPhone,
       deliveryAddress: deliveryAddress,
       paymentMethod: paymentMethod,
+      carrierName: carrierName ?? this.carrierName,
       trackingNumber: trackingNumber ?? this.trackingNumber,
       status: status ?? this.status,
       createdAt: createdAt,

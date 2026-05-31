@@ -39,6 +39,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   String selectedMethod = 'COD';
   bool _isLoading = true;
   bool _isSubmitting = false;
+  bool _submitLock = false; // chặn double-tap trước khi setState kịp rebuild
 
   @override
   void initState() {
@@ -104,7 +105,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+    // Chặn double-tap: lock ngay lập tức, không đợi setState rebuild
+    if (_submitLock) return;
+    _submitLock = true;
+
+    if (!_formKey.currentState!.validate()) {
+      _submitLock = false;
+      return;
+    }
     setState(() => _isSubmitting = true);
 
     try {
@@ -139,10 +147,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         MaterialPageRoute(
           builder: (_) => PaymentMethodScreen(
             method: selectedMethod,
-            isBuyer: true,
             amount: widget.product.price.toInt(),
-            orderId: orderId,         // truyền orderId để theo dõi realtime
+            orderId: orderId,
             sellerId: widget.product.sellerId,
+            isBuyer: true,
           ),
         ),
       );
@@ -156,6 +164,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         );
       }
     } finally {
+      _submitLock = false;
       if (mounted) setState(() => _isSubmitting = false);
     }
   }
@@ -196,7 +205,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     PaymentItemTile(
                       name: widget.product.productName,
                       price: widget.product.price,
-                      //imageUrl: widget.product.productImageUrl,
+                      imageUrl: widget.product.productImageUrl,
                     ),
                     const SizedBox(height: 24),
 

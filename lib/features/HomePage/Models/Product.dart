@@ -1,9 +1,8 @@
 import 'package:project_flutter/shared/models/user_profile.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ProductModel {
   final String sellerId;
-  final String sellerName;
+  final String sellerName; // thêm field này
   final String time;
   final String productImageUrl;
   final String productName;
@@ -17,7 +16,7 @@ class ProductModel {
 
   ProductModel({
     required this.sellerId,
-    required this.sellerName,
+    this.sellerName = '',   // optional, default rỗng
     required this.time,
     required this.productImageUrl,
     required this.productName,
@@ -28,25 +27,10 @@ class ProductModel {
     required this.category,
   });
 
-  factory ProductModel.fromFirestore(Map<String, dynamic> data, String id) {
-    return ProductModel(
-      sellerId: data['sellerId'] ?? '',
-      sellerName: data['sellerName'] ?? 'Người bán',
-      time: data['time'].toDate().toString(),
-      productImageUrl: data['image'] ?? '',
-      productName: data['name'] ?? '',
-      price: (data['price'] ?? 0).toDouble(),
-      specifications: data['fields'] ?? {},
-      description: data['description'] ?? '',
-      location: data['location'] ?? '',
-      category: data['category'] ?? '',
-    );
-  }
   Map<String, dynamic> toMap() {
     return {
       'sellerId': sellerId,
       'sellerName': sellerName,
-      'time': FieldValue.serverTimestamp(),
       'image': productImageUrl,
       'name': productName,
       'price': price,
@@ -54,6 +38,25 @@ class ProductModel {
       'description': description,
       'location': location,
       'category': category,
+      'time': DateTime.now(),
     };
+  }
+
+  // Đổi F hoa → f thường để đúng convention Dart
+  factory ProductModel.fromFirestore(Map<String, dynamic> data, String id) {
+    return ProductModel(
+      sellerId: data['sellerId'] ?? '',
+      sellerName: data['sellerName'] ?? '',
+      time: data['time'] != null
+          ? data['time'].toDate().toString()
+          : DateTime.now().toString(),
+      productImageUrl: data['image'] ?? '',
+      productName: data['name'] ?? '',
+      price: (data['price'] ?? 0).toDouble(),
+      specifications: Map<String, dynamic>.from(data['fields'] ?? {}),
+      description: data['description'] ?? '',
+      location: data['location'] ?? '',
+      category: data['category'] ?? '',
+    );
   }
 }

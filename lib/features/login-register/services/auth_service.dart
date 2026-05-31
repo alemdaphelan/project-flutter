@@ -37,6 +37,7 @@ class AuthService {
   }
 
   /// Đăng ký bằng email + password
+  /// Không cần sync Firestore ở đây — ProfileSetupScreen sẽ tạo document
   Future<User?> signUpWithEmail(String email, String password) async {
     try {
       final credential = await _auth.createUserWithEmailAndPassword(
@@ -47,13 +48,15 @@ class AuthService {
     } on FirebaseAuthException catch (e) {
       switch (e.code) {
         case 'email-already-in-use':
-          throw Exception('Email này đã được sử dụng. Vui lòng đăng nhập hoặc dùng email khác.');
+          throw Exception(
+              'Email này đã được sử dụng. Vui lòng đăng nhập hoặc dùng email khác.');
         case 'invalid-email':
           throw Exception('Email không hợp lệ.');
         case 'weak-password':
           throw Exception('Mật khẩu quá yếu. Cần ít nhất 6 ký tự.');
         case 'operation-not-allowed':
-          throw Exception('Chức năng đăng ký bằng Email chưa được bật trong Firebase Console.');
+          throw Exception(
+              'Chức năng đăng ký bằng Email chưa được bật trong Firebase Console.');
         default:
           throw Exception(e.message ?? 'Đăng ký thất bại.');
       }
@@ -68,13 +71,21 @@ class AuthService {
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) return null; // User tự hủy
 
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
       final userCredential = await _auth.signInWithCredential(credential);
-      return userCredential.user;
+      final user = userCredential.user;
+
+      // Sync thông tin từ Google vào Firestore
+      if (user != null) {
+        await syncUserToFirestore(user);
+      }
+
+      return user;
     } on FirebaseAuthException catch (e) {
       throw Exception(e.message ?? 'Đăng nhập Google thất bại.');
     } catch (e) {
@@ -107,16 +118,79 @@ class AuthService {
       );
 
       final userCredential = await _auth.signInWithCredential(credential);
-      return userCredential.user;
+      final user = userCredential.user;
+
+      // Sync thông tin từ Facebook vào Firestore
+      if (user != null) {
+        await syncUserToFirestore(user);
+      }
+
+      return user;
     } on FirebaseAuthException catch (e) {
       switch (e.code) {
         case 'account-exists-with-different-credential':
-          throw Exception('Email này đã được đăng ký bằng phương thức khác (Google hoặc Email/Password).');
+          throw Exception(
+              'Email này đã được đăng ký bằng phương thức khác (Google hoặc Email/Password).');
         default:
           throw Exception('Lỗi Firebase: ${e.message}');
       }
     } catch (e) {
       rethrow;
+    }
+  }
+
+  /// Đồng bộ thông tin từ Firebase Auth (Google/Facebook) vào Firestore.
+  /// - Lần đầu login: tạo document mới với đầy đủ thông tin từ provider
+  /// - Đã có document: chỉ fill những field đang rỗng, KHÔNG ghi đè
+  ///   dữ liệu user đã tự chỉnh sửa trong ProfileSetupScreen
+  Future<void> syncUserToFirestore(User user) async {
+    try {
+      final ref = _firestore.collection('users').doc(user.uid);
+      final doc = await ref.get();
+
+      if (!doc.exists) {
+        // Lần đầu đăng nhập Social → tạo document mới
+        // hasCompletedProfile = false → app sẽ đẩy vào ProfileSetupScreen
+        // để user bổ sung thêm thông tin (địa chỉ, bio, sở thích...)
+        await ref.set({
+          'displayName': user.displayName ?? '',
+          'email': user.email ?? '',
+          'avatarUrl': user.photoURL ?? '',
+          'phoneNumber': user.phoneNumber ?? '',
+          'hasCompletedProfile': false,
+          'averageRating': 0.0,
+          'totalReviews': 0,
+          'interests': [],
+          'bio': '',
+          'location': '',
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      } else {
+        // Đã có document → chỉ cập nhật field đang rỗng/null
+        final data = doc.data()!;
+        final updates = <String, dynamic>{};
+
+        if ((data['displayName'] ?? '').toString().isEmpty &&
+            (user.displayName ?? '').isNotEmpty) {
+          updates['displayName'] = user.displayName;
+        }
+        if ((data['email'] ?? '').toString().isEmpty &&
+            (user.email ?? '').isNotEmpty) {
+          updates['email'] = user.email;
+        }
+        if ((data['avatarUrl'] ?? '').toString().isEmpty &&
+            (user.photoURL ?? '').isNotEmpty) {
+          updates['avatarUrl'] = user.photoURL;
+        }
+
+        if (updates.isNotEmpty) {
+          updates['updatedAt'] = FieldValue.serverTimestamp();
+          await ref.update(updates);
+        }
+      }
+    } catch (e) {
+      // Không throw — lỗi sync không được chặn luồng đăng nhập
+      print('[syncUserToFirestore] Lỗi: $e');
     }
   }
 
@@ -204,7 +278,6 @@ class AuthService {
     required Function(String error) onError,
   }) async {
     if (isPhone) {
-      // Chuyển số điện thoại Việt Nam sang định dạng quốc tế
       final formattedPhone = _formatVietnamPhone(identifier);
       await sendPhoneOTP(
         phoneNumber: formattedPhone,
@@ -212,10 +285,8 @@ class AuthService {
         onError: onError,
       );
     } else {
-      // Email: gửi link reset thật qua Firebase
       try {
         await _auth.sendPasswordResetEmail(email: identifier.trim());
-        // Gọi onCodeSent với giá trị đặc biệt để UI biết là email
         onCodeSent('EMAIL_RESET_SENT');
       } on FirebaseAuthException catch (e) {
         switch (e.code) {
@@ -241,20 +312,19 @@ class AuthService {
   String _formatVietnamPhone(String phone) {
     phone = phone.trim().replaceAll(' ', '').replaceAll('-', '');
     if (phone.startsWith('0') && phone.length == 10) {
-      return '+84${phone.substring(1)}'; // 0912345678 → +84912345678
+      return '+84${phone.substring(1)}';
     }
     if (phone.startsWith('+84')) {
-      return phone; // Đã đúng định dạng
+      return phone;
     }
     if (phone.startsWith('84') && phone.length == 11) {
-      return '+$phone'; // 84912345678 → +84912345678
+      return '+$phone';
     }
-    return phone; // Trả về nguyên bản nếu không nhận dạng được
+    return phone;
   }
 
   // ====================== ĐỔI MẬT KHẨU ======================
 
-  /// Đổi mật khẩu mới (sau khi đã xác minh OTP phone)
   Future<void> updatePassword(String newPassword) async {
     final user = _auth.currentUser;
     if (user == null) throw Exception('Chưa đăng nhập.');
@@ -263,7 +333,8 @@ class AuthService {
     } on FirebaseAuthException catch (e) {
       switch (e.code) {
         case 'requires-recent-login':
-          throw Exception('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại để đổi mật khẩu.');
+          throw Exception(
+              'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại để đổi mật khẩu.');
         case 'weak-password':
           throw Exception('Mật khẩu quá yếu. Cần ít nhất 6 ký tự.');
         default:
@@ -318,10 +389,6 @@ class AuthService {
       return null;
     }
   }
-
-  /// Upload avatar lên Firebase Storage và trả về URL
-  /// Cần thêm firebase_storage vào pubspec nếu dùng
-  // Future<String?> uploadAvatar(String uid, File imageFile) async { ... }
 
   // ====================== HELPERS ======================
 

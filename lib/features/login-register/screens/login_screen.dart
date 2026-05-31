@@ -5,6 +5,7 @@ import 'register_screen.dart';
 import 'otp_screen.dart';
 import 'profile_setup_screen.dart';
 import 'package:project_flutter/features/HomePage/screens/MainScreen.dart';
+import 'package:project_flutter/features/HomePage/screens/UserProfile.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});

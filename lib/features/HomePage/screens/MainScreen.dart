@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:project_flutter/firestore_service.dart';
 import 'package:project_flutter/features/HomePage/widgets/CategorySelector.dart';
 import 'package:project_flutter/features/HomePage/widgets/CustomDrawer.dart';
+import 'package:project_flutter/features/payment/screens/orders_hub_screen.dart';
+import 'package:project_flutter/features/payment/models/OrderModel.dart';
+import 'package:project_flutter/features/payment/services/OrderService.dart';
 import 'package:project_flutter/features/HomePage/widgets/ProductList.dart';
 import 'package:project_flutter/features/HomePage/screens/Notification.dart';
 import 'package:project_flutter/features/HomePage/screens/CreatePost.dart';
@@ -39,9 +42,8 @@ class _MainScreenState extends State<MainScreen> {
       });
       await Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => const OrderScreen()),
+        MaterialPageRoute(builder: (_) => const OrdersHubScreen()),
       );
-
       setState(() => _selectedIndex = 0);
     } else if (index == 2) {
       await Navigator.push(
@@ -197,8 +199,55 @@ class _MainScreenState extends State<MainScreen> {
         onTap: _onItemTapped,
         items: [
           const BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.check_box_outlined),
+          BottomNavigationBarItem(
+            icon: StreamBuilder<List<OrderModel>>(
+              stream: OrderService().watchSellerOrders(widget.user.uid),
+              builder: (context, sellerSnap) {
+                return StreamBuilder<List<OrderModel>>(
+                  stream: OrderService().watchBuyerOrders(widget.user.uid),
+                  builder: (context, buyerSnap) {
+                    // Đếm đơn cần hành động:
+                    // Người bán: đơn pending chưa gửi
+                    // Người mua: đơn shipping cần confirm
+                    final sellerPending = sellerSnap.data
+                            ?.where((o) => o.status == OrderStatus.pending)
+                            .length ??
+                        0;
+                    final buyerShipping = buyerSnap.data
+                            ?.where((o) => o.status == OrderStatus.shipping)
+                            .length ??
+                        0;
+                    final total = sellerPending + buyerShipping;
+                    return Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        const Icon(Icons.check_box_outlined),
+                        if (total > 0)
+                          Positioned(
+                            right: -4,
+                            top: -4,
+                            child: Container(
+                              padding: const EdgeInsets.all(2),
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              constraints: const BoxConstraints(
+                                  minWidth: 14, minHeight: 14),
+                              child: Text(
+                                '$total',
+                                style: const TextStyle(
+                                    color: Colors.white, fontSize: 8),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                );
+              },
+            ),
             label: 'Đơn hàng',
           ),
           const BottomNavigationBarItem(icon: Icon(Icons.add), label: "Thêm"),

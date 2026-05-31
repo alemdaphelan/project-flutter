@@ -6,6 +6,7 @@ import 'package:project_flutter/features/payment/screens/checkout_screen.dart';
 import 'package:project_flutter/features/HomePage/utils/timeFormat.dart';
 import 'package:project_flutter/features/TinNhan/screens/chat_screen.dart';
 import 'package:project_flutter/features/TinNhan/services/firebase_chat_service.dart';
+import 'package:project_flutter/shared/models/user_profile.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class ProductCard extends StatelessWidget {
@@ -16,7 +17,9 @@ class ProductCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final sellerName = product.seller?.displayName ?? 'Người bán ẩn danh';
     final sellerEmail = product.seller?.email ?? 'Không có thông tin';
-    final sellerAvatar = 'https://i.pravatar.cc/150';
+    final sellerAvatar = product.seller?.avatarUrl ?? 'https://i.pravatar.cc/150';
+    final currentUid = FirebaseAuth.instance.currentUser?.uid;
+    final isOwner = currentUid != null && currentUid == product.sellerId;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(16),
@@ -58,7 +61,7 @@ class ProductCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      sellerEmail,
+                      sellerName,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -66,7 +69,7 @@ class ProductCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
-                      '@${sellerName.replaceAll(" ", "").toLowerCase()}',
+                      sellerEmail,
                       style: const TextStyle(color: Colors.grey, fontSize: 12),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -169,23 +172,29 @@ class ProductCard extends StatelessWidget {
               Expanded(
                 flex: 3,
                 child: ElevatedButton.icon(
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => CheckoutScreen(product: product),
-                    ),
-                  ),
-                  icon: const Icon(
+                  onPressed: isOwner
+                      ? null
+                      : () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => CheckoutScreen(product: product),
+                            ),
+                          ),
+                  icon: Icon(
                     Icons.shopping_cart_outlined,
                     size: 16,
-                    color: Colors.white,
+                    color: isOwner ? Colors.grey.shade500 : Colors.white,
                   ),
-                  label: const Text(
-                    'Mua hàng',
-                    style: TextStyle(fontSize: 12, color: Colors.white),
+                  label: Text(
+                    isOwner ? 'Của bạn' : 'Mua hàng',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isOwner ? Colors.grey.shade500 : Colors.white,
+                    ),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4C9A82),
+                    backgroundColor:
+                        isOwner ? Colors.grey.shade300 : const Color(0xFF4C9A82),
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -253,54 +262,61 @@ class ProductCard extends StatelessWidget {
               Expanded(
                 flex: 3,
                 child: OutlinedButton.icon(
-                  onPressed: () async {
-                    showDialog(
-                      context: context,
-                      barrierDismissible: false,
-                      builder: (c) =>
-                          const Center(child: CircularProgressIndicator()),
-                    );
+                  onPressed: isOwner
+                      ? null
+                      : () async {
+                          showDialog(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (c) =>
+                                const Center(child: CircularProgressIndicator()),
+                          );
 
-                    final chatService = FirebaseChatService();
-                    String myCurrentUserId =
-                        FirebaseAuth.instance.currentUser!.uid;
-                    String roomId = await chatService.getOrCreateChatRoom(
-                      buyerId: myCurrentUserId,
-                      sellerId: product.sellerId,
-                      productName: product.productName,
-                      sellerName: product.sellerName,
-                      isOffer: false,
-                    );
+                          final chatService = FirebaseChatService();
+                          String myCurrentUserId =
+                              FirebaseAuth.instance.currentUser!.uid;
+                          String roomId = await chatService.getOrCreateChatRoom(
+                            buyerId: myCurrentUserId,
+                            sellerId: product.sellerId,
+                            productName: product.productName,
+                            sellerName: product.sellerName,
+                            isOffer: false,
+                          );
 
-                    if (context.mounted) Navigator.pop(context);
+                          if (context.mounted) Navigator.pop(context);
 
-                    if (roomId.isNotEmpty && context.mounted) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ChatScreen(
-                            chatRoomId: roomId,
-                            isSellerViewInit: false,
-                            titleName: product.sellerName,
-                            autoShowOffer: true,
-                            initOfferPrice: product.price,
-                            initOfferImageUrl: product.productImageUrl,
-                          ),
-                        ),
-                      );
-                    }
-                  },
-                  icon: const Icon(
+                          if (roomId.isNotEmpty && context.mounted) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ChatScreen(
+                                  chatRoomId: roomId,
+                                  isSellerViewInit: false,
+                                  titleName: product.sellerName,
+                                  autoShowOffer: true,
+                                  initOfferPrice: product.price,
+                                  initOfferImageUrl: product.productImageUrl,
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                  icon: Icon(
                     Icons.local_offer_outlined,
                     size: 16,
-                    color: Colors.orange,
+                    color: isOwner ? Colors.grey.shade400 : Colors.orange,
                   ),
-                  label: const Text(
+                  label: Text(
                     'Thương lượng',
-                    style: TextStyle(fontSize: 11, color: Colors.orange),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isOwner ? Colors.grey.shade400 : Colors.orange,
+                    ),
                   ),
                   style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.orange),
+                    side: BorderSide(
+                      color: isOwner ? Colors.grey.shade300 : Colors.orange,
+                    ),
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
