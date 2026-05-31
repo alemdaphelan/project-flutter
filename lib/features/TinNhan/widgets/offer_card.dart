@@ -3,20 +3,22 @@ import '../models/message.dart';
 
 class OfferCard extends StatelessWidget {
   final Message message;
-  final bool isMe; // Kiểm tra xem tôi có phải người gửi cái offer này không
-  final bool isSeller; 
-  final VoidCallback onAccept, onReject, onPay, onEdit; // Thêm onEdit
+  final bool isMe;
+  final bool isSeller;
+  final VoidCallback onAccept, onReject, onPay, onEdit;
 
   const OfferCard({
-    Key? key, required this.message, required this.isMe, 
-    required this.isSeller, required this.onAccept, 
+    Key? key, required this.message, required this.isMe,
+    required this.isSeller, required this.onAccept,
     required this.onReject, required this.onPay, required this.onEdit
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final offer = message.offer!;
-    String title = message.senderId == 'seller' ? "NGƯỜI BÁN ĐỀ XUẤT GIÁ" : "NGƯỜI MUA ĐỀ XUẤT GIÁ";
+    
+    bool senderIsSeller = isMe ? isSeller : !isSeller;
+    String title = senderIsSeller ? "NGƯỜI BÁN ĐỀ XUẤT GIÁ" : "NGƯỜI MUA ĐỀ XUẤT GIÁ";
 
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
@@ -40,11 +42,9 @@ class OfferCard extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text("${offer.price.toInt()} VNĐ", style: const TextStyle(fontSize: 22, color: Colors.green, fontWeight: FontWeight.bold)),
                     const Divider(),
-
                     if (offer.status == 'pending')
-                      // --- LOGIC QUAN TRỌNG Ở ĐÂY ---
                       (!isMe) 
-                        ? Row( // Nếu là NGƯỜI NHẬN -> Hiện Đồng ý/Từ chối
+                        ? Row(
                             children: [
                               Expanded(child: OutlinedButton(onPressed: onReject, child: const Text("Từ chối"))),
                               const SizedBox(width: 8),
@@ -55,7 +55,7 @@ class OfferCard extends StatelessWidget {
                               )),
                             ],
                           )
-                        : Column( // Nếu là NGƯỜI GỬI -> Hiện nút Sửa
+                        : Column(
                             children: [
                               const Text("Đang chờ đối phương phản hồi...", style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey, fontSize: 12)),
                               const SizedBox(height: 8),

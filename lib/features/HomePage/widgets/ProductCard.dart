@@ -6,6 +6,7 @@ import 'package:project_flutter/features/payment/screens/checkout_screen.dart';
 import 'package:project_flutter/features/HomePage/utils/timeFormat.dart';
 import 'package:project_flutter/features/TinNhan/screens/chat_screen.dart';
 import 'package:project_flutter/features/TinNhan/services/firebase_chat_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ProductCard extends StatelessWidget {
   final ProductModel product;
@@ -204,7 +205,7 @@ class ProductCard extends StatelessWidget {
                     );
 
                     final chatService = FirebaseChatService();
-                    String myCurrentUserId = "buyer_id_001";
+                    String myCurrentUserId = FirebaseAuth.instance.currentUser!.uid;
                     
                     String roomId = await chatService.getOrCreateChatRoom(
                       buyerId: myCurrentUserId,
@@ -259,7 +260,7 @@ class ProductCard extends StatelessWidget {
                     );
 
                     final chatService = FirebaseChatService();
-                    String myCurrentUserId = "buyer_id_001";
+                    String myCurrentUserId = FirebaseAuth.instance.currentUser!.uid;
                     
                     String roomId = await chatService.getOrCreateChatRoom(
                       buyerId: myCurrentUserId,

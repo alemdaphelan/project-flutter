@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'chat_screen.dart';
 import '../models/chat_room.dart';
 import '../widgets/chat_filter_chip.dart';
@@ -196,26 +197,24 @@ class _MainScreenState extends State<MainScreen_Chat> {
                 if (!snapshot.hasData)
                   return const Center(child: CircularProgressIndicator());
 
-                var rooms = snapshot.data!.docs
-                    .map((d) => ChatRoom.fromFirestore(d))
-                    .toList();
+                String myId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
-                rooms = rooms
-                    .where(
-                      (r) => !ChatExtensionService.hiddenChatIds.contains(r.id),
-                    )
-                    .toList();
+                // BẢO MẬT: Chỉ lấy những phòng chat có ID của mình tham gia
+                var myDocs = snapshot.data!.docs.where((d) {
+                  try {
+                    var data = d.data() as Map<String, dynamic>;
+                    return data['buyerId'] == myId || data['sellerId'] == myId;
+                  } catch (e) {
+                    return false;
+                  }
+                }).toList();
 
-                if (_searchQuery.isNotEmpty) {
-                  rooms = rooms
-                      .where(
-                        (r) => r.otherUserName.toLowerCase().contains(
-                          _searchQuery.toLowerCase(),
-                        ),
-                      )
-                      .toList();
-                }
+                var rooms = myDocs.map((d) => ChatRoom.fromFirestore(d)).toList();
 
+                // Lọc chat đã ẩn
+                rooms = rooms.where((r) => !ChatExtensionService.hiddenChatIds.contains(r.id)).toList();
+
+                // Lọc ngày
                 if (_selectedDate != null) {
                   rooms = rooms.where((r) {
                     final rDate = r.timestamp.toDate();
@@ -225,48 +224,70 @@ class _MainScreenState extends State<MainScreen_Chat> {
                   }).toList();
                 }
 
-                if (rooms.isEmpty) {
-                  return _buildEmptyState();
-                }
+                if (rooms.isEmpty) return _buildEmptyState();
 
                 return ListView.builder(
                   itemCount: rooms.length,
-                  itemBuilder: (c, i) => ListTile(
-                    leading: const CircleAvatar(
-                      backgroundColor: Color(0xFFFFCE00),
-                      child: Icon(Icons.person, color: Colors.white),
-                    ),
-                    title: _highlightText(rooms[i].otherUserName, _searchQuery),
-                    subtitle: Text(
-                      rooms[i].lastMessage,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    trailing: Text(
-                      DateFormat('HH:mm').format(rooms[i].timestamp.toDate()),
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                    onTap: () {
-                      String myCurrentUserId = "buyer_id_001"; 
-                      
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (c) => ChatScreen(
-                            chatRoomId: rooms[i].id,
-                            isSellerViewInit: false, 
-                            titleName: rooms[i].otherUserName,
+                  itemBuilder: (c, i) {
+                    var room = rooms[i];
+                    var doc = myDocs.firstWhere((d) => d.id == room.id);
+                    var data = doc.data() as Map<String, dynamic>;
+                    
+                    // Xác định ai là đối tác (Người mua hay người bán)
+                    String partnerId = data['buyerId'] == myId ? data['sellerId'] : data['buyerId'];
+
+                    // TỰ ĐỘNG TRA CỨU TÊN THẬT TỪ BẢNG USERS
+                    return FutureBuilder<DocumentSnapshot>(
+                      future: FirebaseFirestore.instance.collection('users').doc(partnerId).get(),
+                      builder: (context, userSnap) {
+                        String displayTitle = room.otherUserName; // Tên dự phòng
+                        if (userSnap.hasData && userSnap.data!.data() != null) {
+                          var uData = userSnap.data!.data() as Map<String, dynamic>;
+                          displayTitle = uData['displayName'] ?? displayTitle;
+                        }
+
+                        // Áp dụng bộ lọc Search theo tên thật
+                        if (_searchQuery.isNotEmpty && !displayTitle.toLowerCase().contains(_searchQuery.toLowerCase())) {
+                          return const SizedBox.shrink(); // Ẩn nếu không khớp
+                        }
+
+                        return ListTile(
+                          leading: const CircleAvatar(
+                            backgroundColor: Color(0xFFFFCE00),
+                            child: Icon(Icons.person, color: Colors.white),
                           ),
-                        ),
-                      );
-                    },
-                    onLongPress: () => ChatExtensionService.showChatOptions(
-                      context,
-                      rooms[i].id,
-                      rooms[i].otherUserName,
-                      () => setState(() {}),
-                    ),
-                  ),
+                          title: _highlightText(displayTitle, _searchQuery),
+                          subtitle: Text(
+                            room.lastMessage,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          trailing: Text(
+                            DateFormat('HH:mm').format(room.timestamp.toDate()),
+                            style: const TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (c) => ChatScreen(
+                                  chatRoomId: room.id,
+                                  isSellerViewInit: false,
+                                  titleName: displayTitle,
+                                ),
+                              ),
+                            );
+                          },
+                          onLongPress: () => ChatExtensionService.showChatOptions(
+                            context,
+                            room.id,
+                            displayTitle,
+                            () => setState(() {}),
+                          ),
+                        );
+                      },
+                    );
+                  },
                 );
               },
             ),
@@ -301,7 +322,7 @@ class _MainScreenState extends State<MainScreen_Chat> {
           Icon(Icons.search_off, size: 80, color: Colors.grey[300]),
           const SizedBox(height: 10),
           const Text(
-            "Không tìm thấy cuộc trò chuyện nào!",
+            "Không có cuộc trò chuyện nào!",
             style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
           ),
         ],
