@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/message.dart';
 
 class FirebaseChatService {
@@ -13,7 +14,10 @@ class FirebaseChatService {
   }
 
   Future<String> createNewChat() async {
+    String myId = FirebaseAuth.instance.currentUser?.uid ?? 'unknown';
     DocumentReference doc = await _firestore.collection('chats').add({
+      'buyerId': myId,
+      'sellerId': 'unknown',
       'otherUserName': 'Khách hàng ${DateTime.now().second}',
       'lastMessage': 'Bắt đầu trò chuyện',
       'timestamp': FieldValue.serverTimestamp(),

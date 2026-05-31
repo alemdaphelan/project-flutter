@@ -63,7 +63,7 @@ class _LoginScreenState extends State<LoginScreen> {
       context,
       MaterialPageRoute(
         builder: (_) =>
-            hasProfile ? MainScreen() : const ProfileSetupScreen(),
+            hasProfile ? MainScreen(user: user) : const ProfileSetupScreen(),
       ),
       (route) => false,
     );

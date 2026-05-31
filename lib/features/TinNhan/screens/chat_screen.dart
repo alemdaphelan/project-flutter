@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/message.dart';
 import '../models/offer.dart';
 import '../services/firebase_chat_service.dart';
@@ -12,7 +13,7 @@ import '../services/chat_extension_service.dart';
 
 class ChatScreen extends StatefulWidget {
   final String chatRoomId;
-  final bool isSellerViewInit;
+  final bool isSellerViewInit; 
   final String titleName;
   final bool autoShowOffer;
   final double? initOfferPrice;
@@ -37,18 +38,37 @@ class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _msgController = TextEditingController();
   final FirebaseChatService _chatService = FirebaseChatService();
   
-  late bool isSellerView;
   File? _offerImage;
+  
+  String myUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+  String? partnerId;
+  bool amISeller = false;
 
   @override
   void initState() {
     super.initState();
-    isSellerView = widget.isSellerViewInit;
+    _loadRoomInfo();
     
     if (widget.autoShowOffer) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _pController.text = widget.initOfferPrice?.toInt().toString() ?? '';
         _showOfferDialog(existingImageUrl: widget.initOfferImageUrl);
+      });
+    }
+  }
+
+  Future<void> _loadRoomInfo() async {
+    final doc = await FirebaseFirestore.instance.collection('chats').doc(widget.chatRoomId).get();
+    final data = doc.data();
+    if (data != null) {
+      setState(() {
+        if (data['buyerId'] == myUserId) {
+          partnerId = data['sellerId'];
+          amISeller = false;
+        } else {
+          partnerId = data['buyerId'];
+          amISeller = true;
+        }
       });
     }
   }
@@ -61,7 +81,7 @@ class _ChatScreenState extends State<ChatScreen> {
         builder: (context, setDialogState) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: Text(
-            isSellerView ? "BẠN LÀ NGƯỜI BÁN\nĐề xuất giá bán" : "BẠN LÀ NGƯỜI MUA\nĐề xuất giá mua",
+            amISeller ? "BẠN LÀ NGƯỜI BÁN\nĐề xuất giá bán" : "BẠN LÀ NGƯỜI MUA\nĐề xuất giá mua",
             textAlign: TextAlign.center,
           ),
           content: Column(
@@ -117,8 +137,8 @@ class _ChatScreenState extends State<ChatScreen> {
                 await _chatService.sendMessage(
                   widget.chatRoomId,
                   Message(
-                    senderId: isSellerView ? 'seller' : 'buyer',
-                    receiverId: isSellerView ? 'buyer' : 'seller',
+                    senderId: myUserId,
+                    receiverId: partnerId ?? 'unknown',
                     content: "Đề nghị giá",
                     type: 'offer',
                     timestamp: Timestamp.now(),
@@ -147,25 +167,16 @@ class _ChatScreenState extends State<ChatScreen> {
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.pop(context),
         ),
-        title: FutureBuilder<DocumentSnapshot>(
-          future: FirebaseFirestore.instance.collection('chats').doc(widget.chatRoomId).get(),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) return Text(widget.titleName);
-            var data = snapshot.data!.data() as Map<String, dynamic>?;
-            if (data == null) return Text(widget.titleName);
-
-            String buyer = data['buyerId'] ?? 'Người mua';
-            String seller = data['otherUserName'] ?? widget.titleName;
-
-            return Text(isSellerView ? buyer : seller);
-          },
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.swap_horiz),
-            onPressed: () => setState(() => isSellerView = !isSellerView),
-          )
-        ],
+        title: partnerId == null 
+            ? Text(widget.titleName)
+            : FutureBuilder<DocumentSnapshot>(
+                future: FirebaseFirestore.instance.collection('users').doc(partnerId).get(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) return const Text("Đang tải...");
+                  var userData = snapshot.data?.data() as Map<String, dynamic>?;
+                  return Text(userData?['displayName'] ?? widget.titleName);
+                },
+              ),
       ),
       body: Column(
         children: [
@@ -181,14 +192,13 @@ class _ChatScreenState extends State<ChatScreen> {
                   itemCount: msgs.length,
                   itemBuilder: (c, i) {
                     final m = msgs[i];
-                    final String myId = isSellerView ? 'seller' : 'buyer';
-                    final bool isMe = m.senderId == myId;
+                    final bool isMe = m.senderId == myUserId;
 
                     if (m.type == 'offer') {
                       return OfferCard(
                         message: m,
                         isMe: isMe,
-                        isSeller: isSellerView,
+                        isSeller: amISeller,
                         onAccept: () => _chatService.updateOfferStatus(widget.chatRoomId, m.id!, 'accepted'),
                         onReject: () => _chatService.updateOfferStatus(widget.chatRoomId, m.id!, 'rejected'),
                         onEdit: () {
@@ -209,14 +219,11 @@ class _ChatScreenState extends State<ChatScreen> {
             onSendText: () async {
               if (_msgController.text.trim().isEmpty) return;
 
-              String myRole = isSellerView ? 'seller' : 'buyer';
-              String partnerRole = isSellerView ? 'buyer' : 'seller';
-
               await _chatService.sendMessage(
                 widget.chatRoomId,
                 Message(
-                  senderId: myRole,
-                  receiverId: partnerRole,
+                  senderId: myUserId,
+                  receiverId: partnerId ?? 'unknown',
                   content: _msgController.text.trim(), 
                   type: 'text', 
                   timestamp: Timestamp.now(),
@@ -224,13 +231,13 @@ class _ChatScreenState extends State<ChatScreen> {
               );
               _msgController.clear();
 
-              if (ChatExtensionService.isAutoReplyEnabled) {
+              if (ChatExtensionService.isAutoReplyEnabled && partnerId != null) {
                 Future.delayed(const Duration(seconds: 1), () async {
                   await _chatService.sendMessage(
                     widget.chatRoomId,
                     Message(
-                      senderId: partnerRole,
-                      receiverId: myRole,
+                      senderId: partnerId!,
+                      receiverId: myUserId,
                       content: ChatExtensionService.autoReplyText, 
                       type: 'text', 
                       timestamp: Timestamp.now(),
@@ -250,27 +257,24 @@ class _ChatScreenState extends State<ChatScreen> {
               String? imgUrl = await _chatService.uploadToImgBB(File(pickedFile.path));
 
               if (imgUrl != null) {
-                String myRole = isSellerView ? 'seller' : 'buyer';
-                String partnerRole = isSellerView ? 'buyer' : 'seller';
-
                 await _chatService.sendMessage(
                   widget.chatRoomId,
                   Message(
-                    senderId: myRole,
-                    receiverId: partnerRole,
+                    senderId: myUserId,
+                    receiverId: partnerId ?? 'unknown',
                     content: imgUrl, 
                     type: 'image', 
                     timestamp: Timestamp.now(),
                   ),
                 );
 
-                if (ChatExtensionService.isAutoReplyEnabled) {
+                if (ChatExtensionService.isAutoReplyEnabled && partnerId != null) {
                   Future.delayed(const Duration(seconds: 1), () async {
                     await _chatService.sendMessage(
                       widget.chatRoomId,
                       Message(
-                        senderId: partnerRole,
-                        receiverId: myRole,
+                        senderId: partnerId!,
+                        receiverId: myUserId,
                         content: ChatExtensionService.autoReplyText,
                         type: 'text',
                         timestamp: Timestamp.now(),

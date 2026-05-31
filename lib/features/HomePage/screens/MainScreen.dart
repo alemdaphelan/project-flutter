@@ -9,13 +9,13 @@ import 'package:project_flutter/features/HomePage/widgets/ProductList.dart';
 import 'package:project_flutter/features/HomePage/screens/Notification.dart';
 import 'package:project_flutter/features/HomePage/screens/CreatePost.dart';
 import 'package:project_flutter/features/TinNhan/screens/main_screen.dart';
-
 //moi them
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:project_flutter/features/login-register/screens/login_screen.dart';
 
 class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
+  final User user;
+  const MainScreen({super.key, required this.user});
   @override
   State<MainScreen> createState() => _MainScreenState();
 }
@@ -28,8 +28,7 @@ class _MainScreenState extends State<MainScreen> {
   bool _isSearching = false;
   final FirestoreService firestore = FirestoreService();
   late Future<List<Map<String, dynamic>>> categories;
-  String get _uid => FirebaseAuth.instance.currentUser?.uid ?? '';
-
+  int count = 0;
   @override
   void initState() {
     super.initState();
@@ -49,10 +48,17 @@ class _MainScreenState extends State<MainScreen> {
     } else if (index == 2) {
       await Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => const CreatePostScreen()),
-      );
-      setState(() {
-        _selectedIndex = index;
+        MaterialPageRoute(
+          builder: (_) => CreatePostScreen(
+            userId: widget.user.uid,
+            userName: widget.user.displayName ?? 'Người bán',
+          ),
+        ),
+      ).then((value) {
+        setState(() {
+          _selectedIndex = 0;
+          count++;
+        });
       });
     } else if (index == 3) {
       setState(() {
@@ -175,6 +181,7 @@ class _MainScreenState extends State<MainScreen> {
                 ),
                 const SizedBox(height: 10),
                 ProductList(
+                  key: ValueKey(count),
                   firestore: firestore,
                   searchQuery: _searchController.text,
                   selectedCategory: currentCategoryName,
@@ -194,10 +201,10 @@ class _MainScreenState extends State<MainScreen> {
           const BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(
             icon: StreamBuilder<List<OrderModel>>(
-              stream: OrderService().watchSellerOrders(_uid),
+              stream: OrderService().watchSellerOrders(widget.user.uid),
               builder: (context, sellerSnap) {
                 return StreamBuilder<List<OrderModel>>(
-                  stream: OrderService().watchBuyerOrders(_uid),
+                  stream: OrderService().watchBuyerOrders(widget.user.uid),
                   builder: (context, buyerSnap) {
                     // Đếm đơn cần hành động:
                     // Người bán: đơn pending chưa gửi
@@ -317,6 +324,20 @@ class _MainScreenState extends State<MainScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class OrderScreen extends StatelessWidget {
+  const OrderScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Đơn hàng của tôi')),
+      body: const Center(
+        child: Text('Tính năng quản lý đơn hàng sẽ được phát triển sau!'),
       ),
     );
   }

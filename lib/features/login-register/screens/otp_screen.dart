@@ -4,7 +4,6 @@ import '../services/auth_service.dart';
 import 'change_password_screen.dart';
 import 'profile_setup_screen.dart';
 
-
 class OTPScreen extends StatefulWidget {
   final String identifier; // Số điện thoại hoặc email
   final bool isPhone; // true = số điện thoại, false = email
@@ -153,8 +152,9 @@ class _OTPScreenState extends State<OTPScreen> {
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(
-            builder: (_) =>
-                hasProfile ? const MainScreen() : const ProfileSetupScreen(),
+            builder: (_) => hasProfile
+                ? MainScreen(user: user)
+                : const ProfileSetupScreen(),
           ),
           (route) => false,
         );

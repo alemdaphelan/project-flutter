@@ -6,8 +6,6 @@ import 'package:project_flutter/shared/models/user_profile.dart';
 import 'dart:io';
 import '../services/auth_service.dart';
 
-
-
 class ProfileSetupScreen extends StatefulWidget {
   const ProfileSetupScreen({super.key});
 
@@ -178,7 +176,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         await Future.delayed(const Duration(milliseconds: 500));
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (_) => MainScreen()),
+          MaterialPageRoute(builder: (_) => MainScreen(user: user)),
           (route) => false,
         );
       }
