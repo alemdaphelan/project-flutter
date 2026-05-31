@@ -32,7 +32,7 @@ class UserProfile {
   factory UserProfile.fromMap(Map<String, dynamic> map, String uid) {
     return UserProfile(
       uid: uid,
-      displayName: map['displayName'] as String?,  // thống nhất key
+      displayName: map['displayName'] as String?, // thống nhất key
       email: map['email'] as String?,
       avatarUrl: map['avatarUrl'] as String?,
       phoneNumber: map['phoneNumber'] as String?,
@@ -52,7 +52,7 @@ class UserProfile {
 
   Map<String, dynamic> toMap() {
     return {
-      'displayName': displayName,   
+      'displayName': displayName,
       'email': email,
       'avatarUrl': avatarUrl,
       'phoneNumber': phoneNumber,

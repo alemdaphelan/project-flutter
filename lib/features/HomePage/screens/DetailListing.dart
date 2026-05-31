@@ -272,17 +272,18 @@ class ProductDetailScreen extends StatelessWidget {
                   showDialog(
                     context: context,
                     barrierDismissible: false,
-                    builder: (c) => const Center(child: CircularProgressIndicator()),
+                    builder: (c) =>
+                        const Center(child: CircularProgressIndicator()),
                   );
 
                   final chatService = FirebaseChatService();
-                  String myCurrentUserId = FirebaseAuth.instance.currentUser!.uid;
-                  
+                  String myCurrentUserId =
+                      FirebaseAuth.instance.currentUser!.uid;
                   String roomId = await chatService.getOrCreateChatRoom(
                     buyerId: myCurrentUserId,
                     sellerId: product.sellerId,
                     productName: product.productName,
-                    sellerName: product.sellerName ?? "Người bán",
+                    sellerName: product.sellerName,
                     isOffer: false,
                   );
 
@@ -294,8 +295,8 @@ class ProductDetailScreen extends StatelessWidget {
                       MaterialPageRoute(
                         builder: (_) => ChatScreen(
                           chatRoomId: roomId,
-                          isSellerViewInit: false, 
-                          titleName: product.sellerName ?? "Người bán", 
+                          isSellerViewInit: false,
+                          titleName: product.sellerName,
                         ),
                       ),
                     );
@@ -326,17 +327,18 @@ class ProductDetailScreen extends StatelessWidget {
                   showDialog(
                     context: context,
                     barrierDismissible: false,
-                    builder: (c) => const Center(child: CircularProgressIndicator()),
+                    builder: (c) =>
+                        const Center(child: CircularProgressIndicator()),
                   );
 
                   final chatService = FirebaseChatService();
-                  String myCurrentUserId = FirebaseAuth.instance.currentUser!.uid;
-                  
+                  String myCurrentUserId =
+                      FirebaseAuth.instance.currentUser!.uid;
                   String roomId = await chatService.getOrCreateChatRoom(
                     buyerId: myCurrentUserId,
                     sellerId: product.sellerId,
                     productName: product.productName,
-                    sellerName: product.sellerName ?? "Người bán",
+                    sellerName: product.sellerName,
                     isOffer: false,
                   );
 
@@ -348,8 +350,8 @@ class ProductDetailScreen extends StatelessWidget {
                       MaterialPageRoute(
                         builder: (_) => ChatScreen(
                           chatRoomId: roomId,
-                          isSellerViewInit: false, 
-                          titleName: product.sellerName ?? "Người bán",
+                          isSellerViewInit: false,
+                          titleName: product.sellerName,
                           autoShowOffer: true,
                           initOfferPrice: product.price,
                           initOfferImageUrl: product.productImageUrl,

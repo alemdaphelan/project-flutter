@@ -1,6 +1,6 @@
 name: project_flutter
 description: "A new Flutter project."
-publish_to: 'none'
+publish_to: "none"
 version: 0.1.0
 
 environment:
@@ -10,6 +10,10 @@ dependencies:
   flutter:
     sdk: flutter
   cached_network_image: ^3.4.0
+  image_picker: ^1.0.7
+  dio: ^5.4.1
+  path_provider: ^2.1.1
+  path: ^1.9.0
 
 dev_dependencies:
   flutter_test:
@@ -22,7 +26,6 @@ dev_dependencies:
   google_sign_in: ^6.2.1
   flutter_facebook_auth: ^7.0.0
   http: ^1.1.0
-  image_picker: ^1.0.4
   intl: ^0.20.2
 
 flutter:

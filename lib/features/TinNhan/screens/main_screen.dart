@@ -209,10 +209,16 @@ class _MainScreenState extends State<MainScreen_Chat> {
                   }
                 }).toList();
 
-                var rooms = myDocs.map((d) => ChatRoom.fromFirestore(d)).toList();
+                var rooms = myDocs
+                    .map((d) => ChatRoom.fromFirestore(d))
+                    .toList();
 
                 // Lọc chat đã ẩn
-                rooms = rooms.where((r) => !ChatExtensionService.hiddenChatIds.contains(r.id)).toList();
+                rooms = rooms
+                    .where(
+                      (r) => !ChatExtensionService.hiddenChatIds.contains(r.id),
+                    )
+                    .toList();
 
                 // Lọc ngày
                 if (_selectedDate != null) {
@@ -232,22 +238,32 @@ class _MainScreenState extends State<MainScreen_Chat> {
                     var room = rooms[i];
                     var doc = myDocs.firstWhere((d) => d.id == room.id);
                     var data = doc.data() as Map<String, dynamic>;
-                    
+
                     // Xác định ai là đối tác (Người mua hay người bán)
-                    String partnerId = data['buyerId'] == myId ? data['sellerId'] : data['buyerId'];
+                    String partnerId = data['buyerId'] == myId
+                        ? data['sellerId']
+                        : data['buyerId'];
 
                     // TỰ ĐỘNG TRA CỨU TÊN THẬT TỪ BẢNG USERS
                     return FutureBuilder<DocumentSnapshot>(
-                      future: FirebaseFirestore.instance.collection('users').doc(partnerId).get(),
+                      future: FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(partnerId)
+                          .get(),
                       builder: (context, userSnap) {
-                        String displayTitle = room.otherUserName; // Tên dự phòng
+                        String displayTitle =
+                            room.otherUserName; // Tên dự phòng
                         if (userSnap.hasData && userSnap.data!.data() != null) {
-                          var uData = userSnap.data!.data() as Map<String, dynamic>;
+                          var uData =
+                              userSnap.data!.data() as Map<String, dynamic>;
                           displayTitle = uData['displayName'] ?? displayTitle;
                         }
 
                         // Áp dụng bộ lọc Search theo tên thật
-                        if (_searchQuery.isNotEmpty && !displayTitle.toLowerCase().contains(_searchQuery.toLowerCase())) {
+                        if (_searchQuery.isNotEmpty &&
+                            !displayTitle.toLowerCase().contains(
+                              _searchQuery.toLowerCase(),
+                            )) {
                           return const SizedBox.shrink(); // Ẩn nếu không khớp
                         }
 
@@ -264,7 +280,10 @@ class _MainScreenState extends State<MainScreen_Chat> {
                           ),
                           trailing: Text(
                             DateFormat('HH:mm').format(room.timestamp.toDate()),
-                            style: const TextStyle(fontSize: 12, color: Colors.grey),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey,
+                            ),
                           ),
                           onTap: () {
                             Navigator.push(
@@ -278,12 +297,13 @@ class _MainScreenState extends State<MainScreen_Chat> {
                               ),
                             );
                           },
-                          onLongPress: () => ChatExtensionService.showChatOptions(
-                            context,
-                            room.id,
-                            displayTitle,
-                            () => setState(() {}),
-                          ),
+                          onLongPress: () =>
+                              ChatExtensionService.showChatOptions(
+                                context,
+                                room.id,
+                                displayTitle,
+                                () => setState(() {}),
+                              ),
                         );
                       },
                     );
@@ -306,7 +326,7 @@ class _MainScreenState extends State<MainScreen_Chat> {
                 chatRoomId: id,
                 isSellerViewInit: false,
                 titleName: "Trò chuyện mới",
-              )
+              ),
             ),
           );
         },

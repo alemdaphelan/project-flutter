@@ -1,4 +1,6 @@
 import 'package:project_flutter/shared/models/user_profile.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class ProductModel {
   final String sellerId;
   final String sellerName;
@@ -26,7 +28,7 @@ class ProductModel {
     required this.category,
   });
 
-  factory ProductModel.FromFirestore(Map<String, dynamic> data, String id) {
+  factory ProductModel.fromFirestore(Map<String, dynamic> data, String id) {
     return ProductModel(
       sellerId: data['sellerId'] ?? '',
       sellerName: data['sellerName'] ?? 'Người bán',
@@ -39,5 +41,19 @@ class ProductModel {
       location: data['location'] ?? '',
       category: data['category'] ?? '',
     );
+  }
+  Map<String, dynamic> toMap() {
+    return {
+      'sellerId': sellerId,
+      'sellerName': sellerName,
+      'time': FieldValue.serverTimestamp(),
+      'image': productImageUrl,
+      'name': productName,
+      'price': price,
+      'fields': specifications,
+      'description': description,
+      'location': location,
+      'category': category,
+    };
   }
 }
