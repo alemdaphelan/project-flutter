@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:project_flutter/features/payment/models/OrderModel.dart';
+
 class OrderService {
   final _db = FirebaseFirestore.instance;
   CollectionReference get _col => _db.collection('orders');
@@ -18,9 +19,13 @@ class OrderService {
     });
   }
 
-  /// Người bán cập nhật mã vận đơn → chuyển sang shipping
-  Future<void> confirmShipping(String orderId, String trackingNumber) {
+  /// Người bán cập nhật đơn vị vận chuyển + mã vận đơn → chuyển sang shipping
+  Future<void> confirmShipping(String orderId, {
+    required String carrierName,
+    required String trackingNumber,
+  }) {
     return _col.doc(orderId).update({
+      'carrierName': carrierName,
       'trackingNumber': trackingNumber,
       'status': OrderStatus.shipping.name,
       'updatedAt': FieldValue.serverTimestamp(),
@@ -35,25 +40,31 @@ class OrderService {
     });
   }
 
-  /// Danh sách đơn của buyer
+  /// Danh sách đơn của buyer — sort ở client, không cần Composite Index
   Stream<List<OrderModel>> watchBuyerOrders(String buyerId) {
     return _col
         .where('buyerId', isEqualTo: buyerId)
-        .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((s) => s.docs
-            .map((d) => OrderModel.fromMap(d.data() as Map<String, dynamic>, d.id))
-            .toList());
+        .map((s) {
+          final list = s.docs
+              .map((d) => OrderModel.fromMap(d.data() as Map<String, dynamic>, d.id))
+              .toList();
+          list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          return list;
+        });
   }
 
-  /// Danh sách đơn của seller
+  /// Danh sách đơn của seller — sort ở client, không cần Composite Index
   Stream<List<OrderModel>> watchSellerOrders(String sellerId) {
     return _col
         .where('sellerId', isEqualTo: sellerId)
-        .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((s) => s.docs
-            .map((d) => OrderModel.fromMap(d.data() as Map<String, dynamic>, d.id))
-            .toList());
+        .map((s) {
+          final list = s.docs
+              .map((d) => OrderModel.fromMap(d.data() as Map<String, dynamic>, d.id))
+              .toList();
+          list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          return list;
+        });
   }
 }

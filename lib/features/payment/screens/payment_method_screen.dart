@@ -28,9 +28,6 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
   final Color primaryTeal = const Color(0xFF1B6B60);
   final _service = BankAccountService();
 
-  // Lấy uid của NGƯỜI BÁN — thực tế nên truyền sellerId từ ProductModel
-  // Tạm thời dùng current user để demo flow người bán xem QR của mình
-  final String sellerId = FirebaseAuth.instance.currentUser!.uid;
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +60,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
   // ── QR: đọc tài khoản primary của người bán từ Firestore ──
   Widget _buildQRSection() {
     return FutureBuilder<BankAccount?>(
-      future: _service.getPrimaryAccount(sellerId),
+      future: _service.getPrimaryAccount(widget.sellerId),
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -238,7 +235,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
                 context,
                 MaterialPageRoute(
                   builder: (_) =>
-                      OrderStatusScreen(isBuyer: widget.isBuyer),
+                      OrderStatusScreen(isBuyer: widget.isBuyer, orderId: widget.orderId),
                 ),
               );
             },
