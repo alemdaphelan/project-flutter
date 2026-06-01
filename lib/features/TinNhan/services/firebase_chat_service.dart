@@ -35,18 +35,19 @@ class FirebaseChatService {
     String? productImageUrl,
   }) async {
     try {
-      // 1. TÌM PHÒNG CHAT CHUNG (Chỉ dựa vào 2 ID, không quan tâm sản phẩm gì)
       QuerySnapshot snapshot = await _firestore.collection('chats')
           .where('buyerId', isEqualTo: buyerId)
-          .where('sellerId', isEqualTo: sellerId)
-          .limit(1)
           .get();
+
+      var existingRooms = snapshot.docs.where((doc) {
+        var data = doc.data() as Map<String, dynamic>;
+        return data['sellerId'] == sellerId;
+      }).toList();
 
       String chatRoomId;
 
-      // 2. NẾU ĐÃ TỪNG CHAT -> LẤY PHÒNG CŨ | NẾU CHƯA -> TẠO PHÒNG MỚI
-      if (snapshot.docs.isNotEmpty) {
-        chatRoomId = snapshot.docs.first.id;
+      if (existingRooms.isNotEmpty) {
+        chatRoomId = existingRooms.first.id;
       } else {
         DocumentReference doc = await _firestore.collection('chats').add({
           'buyerId': buyerId,
@@ -59,7 +60,6 @@ class FirebaseChatService {
         chatRoomId = doc.id;
       }
 
-      // 3. LUÔN GỬI TIN NHẮN CHÀO HÀNG VÀO PHÒNG ĐÓ
       if (isOffer && productPrice != null) {
         await _firestore.collection('chats').doc(chatRoomId).collection('messages').add({
              'senderId': buyerId,
@@ -83,15 +83,15 @@ class FirebaseChatService {
         });
       }
       
-      // 4. CẬP NHẬT TÊN SẢN PHẨM MỚI NHẤT VÀO PHÒNG CHAT (Để đồng bộ với nút Thanh toán)
       await _firestore.collection('chats').doc(chatRoomId).update({
         'lastMessage': isOffer ? 'Đề xuất giá: $productName' : 'Hỏi mua: $productName',
-        'productName': productName, // <-- Cập nhật lại sản phẩm đang giao dịch hiện tại
+        'productName': productName, 
         'timestamp': FieldValue.serverTimestamp(),
       });
       
       return chatRoomId;
     } catch (e) {
+      print(e);
       return "";
     }
   }
@@ -105,8 +105,8 @@ class FirebaseChatService {
         final data = json.decode(await response.stream.bytesToString());
         return data['data']['url'];
       }
-    } catch (e) { print("Lỗi upload ảnh lên ImgBB: $e");
-
+    } catch (e) { 
+      print(e);
     }
     return null;
   }
@@ -138,7 +138,8 @@ class FirebaseChatService {
       }
 
       await _firestore.collection('chats').doc(chatRoomId).delete();
-    } catch (e) {print("Lỗi khi xóa phòng chat: $e");
+    } catch (e) {
+      print(e);
     }
   }
 }
