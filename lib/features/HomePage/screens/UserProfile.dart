@@ -3,9 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart'; // Đã thêm t
 import 'package:project_flutter/features/HomePage/widgets/ProductList.dart';
 import 'package:project_flutter/firestore_service.dart';
 import 'package:project_flutter/shared/models/user_profile.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // KỸ SƯ IMPORT THÊM ĐỂ LẤY CURRENT USER ID
-
-// KỸ SƯ IMPORT MÀN HÌNH ĐÁNH GIÁ VÀ MODEL ĐÁNH GIÁ VÀO ĐÂY:
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:project_flutter/features/Review/ReviewScreen.dart';
 import 'package:project_flutter/features/Review/ReviewModel.dart'; // Đã thêm import Model
 
@@ -14,8 +12,6 @@ class ProfileScreen extends StatelessWidget {
 
   final Color primaryTeal = const Color(0xFF1B6B60);
   final Color bgColor = const Color(0xFFF2F8F7);
-
-  // Khởi tạo service
   final FirestoreService _firestore = FirestoreService();
 
   ProfileScreen({super.key, required this.userProfile});
@@ -66,17 +62,13 @@ class ProfileScreen extends StatelessWidget {
                 ],
               ),
             ),
-
-            // 🔴 THAY ĐỔI 1: Truyền context vào đây để hàm con có thể điều hướng trang
             _buildSectionTitle(context),
-
-            // ⚠️ LƯU Ý: Đảm bảo bên trong ProductList đã có shrinkWrap: true và physics: NeverScrollableScrollPhysics()
             ProductList(
               firestore: _firestore,
               userId: userProfile.uid,
               searchQuery: '',
               selectedCategory: 'All',
-              showSold: true, // Trang profile hiện toàn bộ lịch sử kể cả đã bán
+              showSold: true,
             ),
             const SizedBox(height: 32),
           ],
@@ -86,7 +78,6 @@ class ProfileScreen extends StatelessWidget {
   }
 
   Widget _buildProfileHeader() {
-    // Kỹ sư xịn luôn kiểm tra dữ liệu trước khi dùng
     final hasValidAvatar = userProfile.avatarUrl?.isNotEmpty ?? false;
 
     return Padding(
@@ -100,10 +91,9 @@ class ProfileScreen extends StatelessWidget {
               shape: BoxShape.circle,
               border: Border.all(color: primaryTeal, width: 2),
             ),
-            // Tối ưu: Dùng ClipOval bọc CachedNetworkImage thay vì NetworkImage
             child: ClipOval(
               child: Container(
-                width: 80, // Tương đương radius 40 * 2
+                width: 80,
                 height: 80,
                 color: Colors.grey.shade300,
                 child: hasValidAvatar
@@ -145,15 +135,6 @@ class ProfileScreen extends StatelessWidget {
                   userProfile.email ?? 'Email không xác định',
                 ),
                 const SizedBox(height: 4),
-                _buildInfoRow(
-                  Icons.location_on_outlined,
-                  userProfile.location ?? 'Vị trí không xác định',
-                ),
-                const SizedBox(height: 4),
-
-                // ==========================================
-                // 🟢 THAY ĐỔI Ở ĐÂY: Dùng FutureBuilder tính toán điểm số trực tiếp
-                // ==========================================
                 FutureBuilder<List<ReviewModel>>(
                   future: _firestore.getReviewsForSeller(userProfile.uid),
                   builder: (context, snapshot) {
@@ -193,7 +174,9 @@ class ProfileScreen extends StatelessWidget {
                         Text(
                           'Tổng đánh giá: $totalReviews',
                           style: const TextStyle(
-                              fontSize: 14, color: Colors.black87),
+                            fontSize: 14,
+                            color: Colors.black87,
+                          ),
                         ),
                         const SizedBox(height: 2),
                         Row(
@@ -206,8 +189,11 @@ class ProfileScreen extends StatelessWidget {
                                 color: Colors.black87,
                               ),
                             ),
-                            const Icon(Icons.star,
-                                size: 16, color: Colors.black),
+                            const Icon(
+                              Icons.star,
+                              size: 16,
+                              color: Colors.black,
+                            ),
                           ],
                         ),
                       ],
@@ -240,7 +226,6 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  // 🔴 THAY ĐỔI 2: Hàm này nhận BuildContext hứng từ hàm build chính ném xuống
   Widget _buildSectionTitle(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
@@ -262,7 +247,8 @@ class ProfileScreen extends StatelessWidget {
                 context,
                 MaterialPageRoute(
                   builder: (_) => SellerReviewsScreen(
-                    sellerId: userProfile.uid, // Mở kho review của chính chủ profile này
+                    sellerId: userProfile
+                        .uid, // Mở kho review của chính chủ profile này
                     currentUserId: currentUid, // ID thằng đang đi xem
                   ),
                 ),

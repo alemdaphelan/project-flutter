@@ -319,10 +319,12 @@ class _BasicInfoTabState extends State<_BasicInfoTab> {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Không upload được ảnh. Vui lòng thử lại.'),
-                backgroundColor: Colors.red,
+                content: Text('Đã lưu thông tin!'),
+                backgroundColor: primaryTeal,
+                duration: Duration(seconds: 2),
               ),
             );
+            _loadProfile();
           }
           setState(() => _isSaving = false);
           return;

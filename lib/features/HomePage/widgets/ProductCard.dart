@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // KỸ SƯ IMPORT THÊM ĐỂ XÀI FIELDVALUE VÀ DOCUMENT
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:project_flutter/features/HomePage/Models/Product.dart';
 import 'package:project_flutter/features/HomePage/screens/UserProfile.dart';
 import 'package:project_flutter/features/HomePage/screens/DetailListing.dart';
@@ -202,10 +202,11 @@ class ProductCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  '\$${product.price.toStringAsFixed(2)}',
+                  '${product.price.toInt().toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')} VNĐ',
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 20,
+                    color: Color(0xFF1B6B60),
                   ),
                 ),
                 const SizedBox(height: 4),
