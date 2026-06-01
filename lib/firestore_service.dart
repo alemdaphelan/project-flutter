@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:project_flutter/features/HomePage/Models/Product.dart';
 import 'package:project_flutter/shared/models/user_profile.dart';
 import 'package:project_flutter/features/Review/ReviewModel.dart';
+import 'package:project_flutter/features/Notification/NotificationModel.dart';
 
 // Tự tạo một class để lưu cấu hình, an toàn tuyệt đối
 class CloudinaryConfig {
@@ -169,14 +170,6 @@ class FirestoreService {
     }
   }
 
-  Future<void> sendNotification(Map<String, dynamic> notiData) async {
-    try {
-      await _firestore.collection('notifications').add(notiData);
-    } catch (e) {
-      print('❌ Lỗi gửi thông báo: $e');
-    }
-  }
-
   Stream<QuerySnapshot> getNotificationsStream(String userId) {
     return _firestore
         .collection('notifications')
@@ -189,5 +182,32 @@ class FirestoreService {
     await _firestore.collection('notifications').doc(notiId).update({
       'isRead': true,
     });
+  }
+
+  Future<void> triggerNotification({
+    required String receiverId,
+    required String title,
+    required String body,
+    required NotificationType type,
+    required String relatedId,
+  }) async {
+    try {
+      final newNoti = {
+        'userId': receiverId,
+        'title': title,
+        'body': body,
+        'type': type.name,
+        'relatedId': relatedId,
+        'isRead': false,
+        'createdAt': FieldValue.serverTimestamp(),
+      };
+      await _firestore.collection('notifications').add(newNoti);
+
+      print(
+        "🚀 [Notification] Đã bắn tự động loại [${type.name}] tới User: $receiverId",
+      );
+    } catch (e) {
+      print("❌ [Notification Error] Bắn thông báo thất bại: $e");
+    }
   }
 }

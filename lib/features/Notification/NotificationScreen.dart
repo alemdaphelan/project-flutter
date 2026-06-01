@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:project_flutter/firestore_service.dart';
 import 'package:project_flutter/features/Notification/NotificationModel.dart';
+// KỸ SƯ IMPORT CÁC MÀN HÌNH ĐÍCH ĐỂ CHUYỂN HƯỚNG
+import 'package:project_flutter/features/TinNhan/screens/chat_screen.dart';
 
 class NotificationScreen extends StatefulWidget {
   final String userId;
@@ -82,22 +84,44 @@ class _NotificationScreenState extends State<NotificationScreen> {
   Widget _buildNotificationItem(NotificationModel noti, Color themeColor) {
     return InkWell(
       onTap: () async {
-        // TƯ DUY KỸ SƯ: Bấm vào là cập nhật trạng thái "Đã đọc" ngay lập tức trên Database
+        // 1. Cập nhật trạng thái "Đã đọc" tắt chấm đỏ
         if (!noti.isRead) {
           await _firestoreService.markNotificationAsRead(noti.id);
         }
 
-        // Logic điều hướng (Tạm thời in ra console, sau này mày gắn Navigator.push vào đây)
         if (context.mounted) {
-          if (noti.type == 'review') {
-            debugPrint("👉 Nhảy sang trang review với ID: ${noti.relatedId}");
-          } else if (noti.type == 'order') {
-            debugPrint("👉 Nhảy sang trang đơn hàng với ID: ${noti.relatedId}");
+          switch (noti.type) {
+            case NotificationType.chat:
+            case NotificationType.offer_received:
+            case NotificationType.offer_accepted:
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ChatScreen(
+                    chatRoomId: noti.relatedId,
+                    titleName: "Trò chuyện",
+                  ),
+                ),
+              );
+              break;
+
+            case NotificationType.review:
+              debugPrint(
+                "Nhảy sang trang Review với sellerId: ${noti.relatedId}",
+              );
+              break;
+
+            case NotificationType.order_purchased:
+            case NotificationType.order_delivered:
+            case NotificationType.order_cancelled:
+              debugPrint("Nhảy sang đơn hàng ID: ${noti.relatedId}");
+              break;
+            default:
+              break;
           }
         }
       },
       child: Container(
-        // Đổi màu nền để phân biệt Đọc (trắng) và Chưa đọc (xanh nhạt)
         color: noti.isRead ? Colors.white : const Color(0xFFEAF4F2),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         margin: const EdgeInsets.only(bottom: 1),
@@ -157,28 +181,53 @@ class _NotificationScreenState extends State<NotificationScreen> {
     );
   }
 
-  Widget _buildNotificationIcon(String type, Color themeColor) {
+  Widget _buildNotificationIcon(NotificationType type, Color themeColor) {
     IconData iconData;
     Color bagColor;
+    Color iconColor;
 
     switch (type) {
-      case 'order':
-        iconData = Icons.local_shipping_outlined;
-        bagColor = Colors.orange.shade100;
+      case NotificationType.order_purchased:
+        iconData = Icons.shopping_bag_outlined;
+        bagColor = Colors.blue.shade100;
+        iconColor = Colors.blue.shade700;
         break;
-      case 'review':
+      case NotificationType.order_delivered:
+        iconData = Icons.check_circle_outline;
+        bagColor = Colors.green.shade100;
+        iconColor = Colors.green.shade700;
+        break;
+      case NotificationType.order_cancelled:
+        iconData = Icons.cancel_outlined;
+        bagColor = Colors.red.shade100;
+        iconColor = Colors.red.shade700;
+        break;
+      case NotificationType.offer_received:
+      case NotificationType.offer_accepted:
+        iconData = Icons.handshake_outlined; // Icon bắt tay thương lượng
+        bagColor = Colors.orange.shade100;
+        iconColor = Colors.orange.shade700;
+        break;
+      case NotificationType.review:
         iconData = Icons.star_outline;
         bagColor = Colors.amber.shade100;
+        iconColor = Colors.amber.shade800;
+        break;
+      case NotificationType.chat:
+        iconData = Icons.chat_bubble_outline;
+        bagColor = Colors.purple.shade100;
+        iconColor = Colors.purple.shade700;
         break;
       default:
-        iconData = Icons.campaign_outlined;
-        bagColor = themeColor.withOpacity(0.1);
+        iconData = Icons.notifications_none;
+        bagColor = Colors.grey.shade200;
+        iconColor = Colors.grey.shade700;
     }
 
     return CircleAvatar(
       radius: 20,
       backgroundColor: bagColor,
-      child: Icon(iconData, color: themeColor, size: 20),
+      child: Icon(iconData, color: iconColor, size: 20),
     );
   }
 

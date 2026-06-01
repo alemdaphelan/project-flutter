@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:project_flutter/features/login-register/screens/login_screen.dart';
 import 'package:project_flutter/features/HomePage/screens/edit_profile_screen.dart';
-// TODO: import trang UserProfile của bạn bè bạn đây, ví dụ:
-import 'package:project_flutter/features/HomePage/screens/UserProfile.dart';
 
 class CustomDrawer extends StatelessWidget {
   const CustomDrawer({super.key});
@@ -15,7 +13,6 @@ class CustomDrawer extends StatelessWidget {
     final String userName = user?.displayName ?? 'Người Dùng Mới';
     final String userEmail = user?.email ?? 'Chưa có email';
     final String? userAvatar = user?.photoURL;
-    final Color primaryTeal = const Color(0xFF1B6B60);
 
     return Drawer(
       backgroundColor: Colors.white,
@@ -47,12 +44,15 @@ class CustomDrawer extends StatelessWidget {
                     child: CircleAvatar(
                       radius: 28,
                       backgroundColor: Colors.white.withOpacity(0.3),
-                      backgroundImage: (userAvatar != null && userAvatar.isNotEmpty)
+                      backgroundImage:
+                          (userAvatar != null && userAvatar.isNotEmpty)
                           ? NetworkImage(userAvatar)
                           : null,
                       child: (userAvatar == null || userAvatar.isEmpty)
                           ? Text(
-                              userName.isNotEmpty ? userName[0].toUpperCase() : 'U',
+                              userName.isNotEmpty
+                                  ? userName[0].toUpperCase()
+                                  : 'U',
                               style: const TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
@@ -97,17 +97,22 @@ class CustomDrawer extends StatelessWidget {
                           // Nút xem trang cá nhân
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 3),
+                              horizontal: 10,
+                              vertical: 3,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                  color: Colors.white.withOpacity(0.5)),
+                                color: Colors.white.withOpacity(0.5),
+                              ),
                             ),
                             child: const Text(
                               'Xem trang cá nhân →',
                               style: TextStyle(
-                                  color: Colors.white, fontSize: 11),
+                                color: Colors.white,
+                                fontSize: 11,
+                              ),
                             ),
                           ),
                         ],
@@ -135,9 +140,7 @@ class CustomDrawer extends StatelessWidget {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => const EditProfileScreen(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const EditProfileScreen()),
                 );
               },
             ),
@@ -210,7 +213,9 @@ class CustomDrawer extends StatelessWidget {
               title: const Text(
                 'Đăng xuất',
                 style: TextStyle(
-                    color: Colors.red, fontWeight: FontWeight.w600),
+                  color: Colors.red,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               onTap: () async {
                 Navigator.pop(context);
@@ -259,8 +264,10 @@ class CustomDrawer extends StatelessWidget {
         style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
       ),
       subtitle: subtitle != null
-          ? Text(subtitle,
-              style: const TextStyle(fontSize: 11, color: Colors.grey))
+          ? Text(
+              subtitle,
+              style: const TextStyle(fontSize: 11, color: Colors.grey),
+            )
           : null,
       onTap: onTap,
       dense: subtitle == null,

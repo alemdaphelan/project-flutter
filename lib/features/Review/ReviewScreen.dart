@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:project_flutter/firestore_service.dart';
 import 'package:project_flutter/features/Review/ReviewModel.dart';
+import 'package:project_flutter/features/Notification/NotificationModel.dart';
 
 class SellerReviewsScreen extends StatefulWidget {
   final String sellerId;
@@ -89,13 +90,10 @@ class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
       ),
       builder: (context) {
         return StatefulBuilder(
-          // Dùng StatefulBuilder để update UI cục bộ bên trong BottomSheet
           builder: (BuildContext context, StateSetter setModalState) {
             return Padding(
               padding: EdgeInsets.only(
-                bottom: MediaQuery.of(
-                  context,
-                ).viewInsets.bottom, // Né cái bàn phím ảo
+                bottom: MediaQuery.of(context).viewInsets.bottom,
                 left: 16,
                 right: 16,
                 top: 24,
@@ -108,19 +106,17 @@ class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 16),
-
-                  // COMPONENT NGÔI SAO TỪ THƯ VIỆN flutter_rating_bar
                   RatingBar.builder(
                     initialRating: 5,
                     minRating: 1,
                     direction: Axis.horizontal,
-                    allowHalfRating: true, // Cho phép đánh giá rưỡi (4.5 sao)
+                    allowHalfRating: true,
                     itemCount: 5,
                     itemPadding: const EdgeInsets.symmetric(horizontal: 4.0),
                     itemBuilder: (context, _) =>
                         const Icon(Icons.star, color: Colors.amber),
                     onRatingUpdate: (rating) {
-                      currentRating = rating; // Cập nhật biến khi bấm vào sao
+                      currentRating = rating;
                     },
                   ),
                   const SizedBox(height: 24),
@@ -189,10 +185,17 @@ class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
                                 await _firestoreService.addReview(
                                   newReview.toMap(),
                                 );
-
+                                await _firestoreService.triggerNotification(
+                                  receiverId: widget.sellerId,
+                                  title: 'Đánh giá mới! ⭐',
+                                  body:
+                                      'Bạn vừa nhận được đánh giá $currentRating sao từ người mua.',
+                                  type: NotificationType.review,
+                                  relatedId: widget.currentUserId,
+                                );
                                 if (context.mounted) {
-                                  Navigator.pop(context); // Tắt form sheet
-                                  _loadReviews(); // CHUẨN KỸ SƯ: Refresh lại danh sách hiển thị
+                                  Navigator.pop(context);
+                                  _loadReviews();
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
                                       content: Text(
@@ -225,7 +228,6 @@ class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
       },
     );
   }
-  // ==========================================
 
   @override
   Widget build(BuildContext context) {
@@ -262,7 +264,6 @@ class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
                 return _buildReviewItem(review);
               },
             ),
-      // Cái nút nổi lềnh bềnh dưới góc phải
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: const Color(0xFF1B6B60),
         onPressed: _showAddReviewSheet,
@@ -275,7 +276,6 @@ class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
     );
   }
 
-  // Giao diện khi chưa có review
   Widget _buildEmptyState() {
     return Center(
       child: Column(
@@ -297,9 +297,7 @@ class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
     );
   }
 
-  // Giao diện vẽ 1 cục review
   Widget _buildReviewItem(ReviewModel review) {
-    // Lấy thông tin user (đã được bốc kèm trong hàm getReviewsForSeller)
     String reviewerName = review.reviewer?.displayName ?? 'Người dùng ẩn danh';
     String avatarUrl = review.reviewer?.avatarUrl ?? '';
 
@@ -331,7 +329,6 @@ class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
                 ),
               ),
               const SizedBox(height: 4),
-              // Hiển thị lại số sao tĩnh
               RatingBarIndicator(
                 rating: review.rating,
                 itemBuilder: (context, index) =>
@@ -346,7 +343,6 @@ class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
                 style: const TextStyle(fontSize: 14, color: Colors.black87),
               ),
               const SizedBox(height: 8),
-              // Thời gian đánh giá (chỉ lấy phần ngày tháng năm)
               Text(
                 review.time.split(' ')[0],
                 style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
