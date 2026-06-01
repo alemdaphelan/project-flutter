@@ -63,6 +63,9 @@ class ChatExtensionService {
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Đang xóa dữ liệu...")));
                 
                 await FirebaseChatService().deleteChat(chatRoomId); // Xóa thật trên Firebase
+                
+                if (!context.mounted) return;
+
                 onUpdate(); // Vẽ lại màn hình
                 
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Đã xóa vĩnh viễn đoạn chat!")));
