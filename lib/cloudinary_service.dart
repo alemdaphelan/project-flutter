@@ -2,26 +2,13 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 
-// ========================================================
-// KỸ SƯ TẠO ENUM ĐỂ PHÂN BIỆT MỤC ĐÍCH UPLOAD
-// ========================================================
-enum ImageUploadType {
-  product,
-  avatar,
-  chat, // Tao tặng thêm cái này để dùng cho màn hình Chat lúc nãy
-}
+enum ImageUploadType { product, avatar, chat }
 
 class CloudinaryService {
-  // 🔴 THAY BẰNG CLOUD NAME CỦA MÀY
   final String cloudName = "db9hzryrx";
-
-  // 🔴 ĐIỀN CHÍNH XÁC TÊN 2 CÁI PRESET MÀY VỪA TẠO TRÊN WEB VÀO ĐÂY
   final String productPreset = "selling_app_products";
   final String avatarPreset = "selling_app_avatar";
-  // (Nếu chat mày muốn lưu chung thư mục với product thì lấy chung preset)
   final String chatPreset = "selling_app_products";
-
-  /// Hàm đẩy ảnh lên Cloudinary. Bắt buộc phải truyền [type] để chọn đúng đường ray.
   Future<String?> uploadImage(
     File imageFile, {
     required ImageUploadType type,

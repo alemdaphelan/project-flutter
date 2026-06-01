@@ -1,6 +1,3 @@
-import 'dart:io';
-import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart' as p;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:project_flutter/features/HomePage/Models/Product.dart';
 import 'package:project_flutter/shared/models/user_profile.dart';
@@ -35,7 +32,7 @@ class FirestoreService {
           doc.data() as Map<String, dynamic>,
           doc.id,
         );
-      }).toList();
+      }).toList()..sort((a, b) => b.time.compareTo(a.time));
 
       await Future.wait(
         products.map((product) async {
@@ -56,7 +53,12 @@ class FirestoreService {
       QuerySnapshot snapshot = await _firestore.collection('categories').get();
       return snapshot.docs
           .map((doc) => doc.data() as Map<String, dynamic>)
-          .toList();
+          .toList()
+        ..sort((a, b) {
+          String nameA = a['name'] ?? '';
+          String nameB = b['name'] ?? '';
+          return nameA.toLowerCase().compareTo(nameB.toLowerCase());
+        });
     } catch (e) {
       print('Error fetching categories: $e');
       return [];
@@ -82,12 +84,15 @@ class FirestoreService {
           .where('sellerId', isEqualTo: userId)
           .get();
 
-      List<ProductModel> userProducts = snapshot.docs.map((doc) {
-        return ProductModel.fromFirestore(
-          doc.data() as Map<String, dynamic>,
-          doc.id,
-        );
-      }).toList();
+      List<ProductModel> userProducts =
+          snapshot.docs.map((doc) {
+              return ProductModel.fromFirestore(
+                doc.data() as Map<String, dynamic>,
+                doc.id,
+              );
+            }).toList()
+            //sắp xếp theo thời gian mới nhất
+            ..sort((a, b) => b.time.compareTo(a.time));
       UserProfile? sellerProfile = await getUserProfile(userId);
       if (sellerProfile != null) {
         for (var product in userProducts) {
@@ -100,24 +105,6 @@ class FirestoreService {
       print('Error fetching products by user: $e');
       return [];
     }
-  }
-
-  Future<String> saveImageToLocalStorage(File pickedFile) async {
-    // 1. Lấy đường dẫn thư mục an toàn mà hệ điều hành cấp riêng cho App Oldie
-    final Directory appDocDir = await getApplicationDocumentsDirectory();
-    final String appDocPath = appDocDir.path;
-
-    // 2. Bốc cái tên file gốc (Ví dụ: image_picker_123.jpg)
-    final String fileName = p.basename(pickedFile.path);
-
-    // 3. Tạo đường dẫn mới trong bộ nhớ app (Ví dụ: /data/user/0/com.example.oldie/app_flutter/image_picker_123.jpg)
-    final String targetPath = '$appDocPath/$fileName';
-
-    // 4. Copy file ảnh vật lý vào thư mục đó
-    final File localImage = await pickedFile.copy(targetPath);
-
-    // 5. Trả về cái đường dẫn chuỗi (Local Path) để mày lưu vào Firestore
-    return localImage.path;
   }
 
   // Hàm đẩy 1 cái đánh giá lên Firebase
@@ -175,7 +162,7 @@ class FirestoreService {
         .collection('notifications')
         .where('userId', isEqualTo: userId)
         .orderBy('createdAt', descending: true)
-        .snapshots(); // Điểm ăn tiền của Realtime!
+        .snapshots();
   }
 
   Future<void> markNotificationAsRead(String notiId) async {
