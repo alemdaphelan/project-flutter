@@ -8,8 +8,7 @@ import 'package:project_flutter/features/HomePage/utils/timeFormat.dart';
 import 'package:project_flutter/features/TinNhan/screens/chat_screen.dart';
 import 'package:project_flutter/features/TinNhan/services/firebase_chat_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:project_flutter/features/HomePage/utils/SmartImage.dart';
-
+import 'package:project_flutter/features/HomePage/utils/SmartImage.dart';import 'package:cached_network_image/cached_network_image.dart';
 class ProductCard extends StatelessWidget {
   final ProductModel product;
   const ProductCard({super.key, required this.product});
@@ -54,11 +53,29 @@ class ProductCard extends StatelessWidget {
                     );
                   }
                 },
-                child: SmartImage(
-                  imagePath: sellerAvatar,
-                  width: 40,
-                  height: 40,
-                  borderRadius: 20,
+                // ── StreamBuilder để real-time listen avatar từ Firestore ──
+                child: StreamBuilder<DocumentSnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(product.sellerId)
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    String avatarUrl =
+                        product.seller?.avatarUrl ?? 'https://i.pravatar.cc/150';
+
+                    if (snapshot.hasData &&
+                        snapshot.data?.exists == true) {
+                      final userData = snapshot.data!.data() as Map?;
+                      avatarUrl = (userData?['avatarUrl'] ?? avatarUrl) as String;
+                    }
+
+                    return SmartImage(
+                      imagePath: avatarUrl,
+                      width: 40,
+                      height: 40,
+                      borderRadius: 20,
+                    );
+                  },
                 ),
               ),
               const SizedBox(width: 10),
