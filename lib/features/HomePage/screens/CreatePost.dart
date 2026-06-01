@@ -152,6 +152,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       });
 
       ProductModel newProduct = ProductModel(
+        id: '',
         sellerId: widget.userId,
         sellerName: '',
         time: '',

@@ -7,6 +7,7 @@ import 'package:project_flutter/features/payment/models/OrderModel.dart';
 import 'package:project_flutter/features/payment/services/OrderService.dart';
 import 'package:project_flutter/features/payment/widgets/payment_item_tile.dart';
 import 'payment_method_screen.dart';
+import 'package:project_flutter/features/payment/widgets/searchable_address_dropdown.dart';
 
 class CheckoutScreen extends StatefulWidget {
   /// Nhận ProductModel từ DetailListing thay vì hardcode
@@ -113,6 +114,20 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       _submitLock = false;
       return;
     }
+    if (selectedProvinceCode == null) {
+      _submitLock = false;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng chọn Tỉnh/Thành phố')),
+      );
+      return;
+    }
+    if (selectedWardCode == null) {
+      _submitLock = false;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng chọn Phường/Xã')),
+      );
+      return;
+    }
     setState(() => _isSubmitting = true);
 
     try {
@@ -127,7 +142,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         id: '',
         buyerId: uid,
         sellerId: widget.product.sellerId,
-        productId: widget.product.productName, // dùng tạm, lý tưởng là Firestore doc ID
+        productId: widget.product.id, // ← dùng ID thật để update status sau này
         productName: widget.product.productName,
         productImageUrl: widget.product.productImageUrl,
         price: widget.product.price,
@@ -240,56 +255,49 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             color: Colors.grey.shade700)),
                     const SizedBox(height: 12),
 
-                    // Dropdown Tỉnh
-                    DropdownButtonFormField<String>(
-                      decoration: _inputStyle('Tỉnh / Thành phố'),
-                      value: selectedProvinceCode,
-                      items: _allProvinces
-                          .map((p) => DropdownMenuItem(
-                                value: p['province_code'].toString(),
-                                child: Text(p['name']),
-                              ))
-                          .toList(),
-                      onChanged: (val) {
-                        final province = _allProvinces.firstWhere(
-                            (p) => p['province_code'].toString() == val);
+                    // Dropdown Tỉnh — có tìm kiếm
+                    SearchableAddressDropdown(
+                      label: 'Tỉnh / Thành phố',
+                      icon: Icons.location_city_outlined,
+                      items: _allProvinces,
+                      displayKey: 'name',
+                      selectedValue: selectedProvinceName,
+                      primaryTeal: primaryTeal,
+                      onSelected: (item) {
                         setState(() {
-                          selectedProvinceCode = val;
-                          selectedProvinceName = province['name'];
+                          selectedProvinceCode =
+                              item['province_code'].toString();
+                          selectedProvinceName = item['name'];
                           _displayWards = _allWards
                               .where((w) =>
-                                  w['province_code'].toString() == val)
+                                  w['province_code'].toString() ==
+                                  selectedProvinceCode)
                               .toList();
                           selectedWardCode = null;
                           selectedWardName = null;
                         });
                       },
-                      validator: (val) =>
-                          val == null ? 'Chọn Tỉnh/Thành' : null,
                     ),
                     const SizedBox(height: 12),
 
-                    // Dropdown Phường
-                    DropdownButtonFormField<String>(
-                      decoration:
-                          _inputStyle('Phường / Xã / Thị trấn'),
-                      value: selectedWardCode,
-                      items: _displayWards
-                          .map((w) => DropdownMenuItem(
-                                value: w['ward_code'].toString(),
-                                child: Text(w['name']),
-                              ))
-                          .toList(),
-                      onChanged: (val) {
-                        final ward = _displayWards.firstWhere(
-                            (w) => w['ward_code'].toString() == val);
+                    // Dropdown Phường — có tìm kiếm
+                    SearchableAddressDropdown(
+                      label: 'Phường / Xã / Thị trấn',
+                      icon: Icons.holiday_village_outlined,
+                      items: _displayWards,
+                      displayKey: 'name',
+                      selectedValue: selectedWardName,
+                      enabled: selectedProvinceCode != null,
+                      hintText: selectedProvinceCode == null
+                          ? 'Chọn tỉnh/thành trước'
+                          : 'Chọn phường/xã',
+                      primaryTeal: primaryTeal,
+                      onSelected: (item) {
                         setState(() {
-                          selectedWardCode = val;
-                          selectedWardName = ward['name'];
+                          selectedWardCode = item['ward_code'].toString();
+                          selectedWardName = item['name'];
                         });
                       },
-                      validator: (val) =>
-                          val == null ? 'Chọn Phường/Xã' : null,
                     ),
                     const SizedBox(height: 12),
 
