@@ -43,7 +43,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   @override
   void initState() {
     super.initState();
-    // VỪA MỞ MÀN HÌNH: Đi bốc danh mục từ Firebase về liền
+    //Lấy danh mục từ Firebase về
     _loadCategoriesFromFirebase();
   }
 
@@ -57,10 +57,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     super.dispose();
   }
 
-  // Hàm nạp danh mục từ Firestore Service của mày
+  // Hàm nạp danh mục từ Firestore Service
   void _loadCategoriesFromFirebase() async {
     try {
-      // Gọi lại cái hàm getCategories() có sẵn trong file firestore_service.dart của mày
+      // Gọi lại cái hàm getCategories() có sẵn trong file firestore_service.dart
       List<Map<String, dynamic>> cats = await _firestoreService.getCategories();
 
       setState(() {
@@ -71,7 +71,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           // Đẻ ô nhập liệu cho danh mục đó
           _initDynamicFields();
         }
-        _isLoading = false; // Tải xong rồi thì tắt màn hình chờ
+        _isLoading = false; // Tải xong, tắt màn hình chờ
       });
     } catch (e) {
       print("Lỗi nạp danh mục từ Firebase: $e");
@@ -82,7 +82,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   // Hàm lấy ra danh sách fields (Array) từ cái danh mục đang được chọn
   List<String> _getCurrentFields() {
     if (_selectedCategory == null) return [];
-    // Tìm trong đống data Firebase xem thằng nào có name trùng với thằng đang chọn
+    // Tìm data trong Firebase xem có name trùng nào với đang chọn
     final currentCat = _firebaseCategories.firstWhere(
       (cat) => cat['name'] == _selectedCategory,
       orElse: () => {},
@@ -143,7 +143,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
     try {
       // ========================================================
-      // 1. KỸ SƯ BẮN ẢNH LÊN CLOUDINARY TRƯỚC
+      // 1. KỸ SƯ TẢI ẢNH LÊN CLOUDINARY TRƯỚC
       // ========================================================
       String? cloudinaryUrl = await CloudinaryService().uploadImage(
         _pickedImage!,
@@ -174,9 +174,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       ProductModel newProduct = ProductModel(
         id: '',
         sellerId: widget.userId,
-        sellerName: widget.userName, // Sửa lại chỗ này luôn, nãy mày để rỗng ''
+        sellerName: widget.userName,
         time: '',
-        productImageUrl: cloudinaryUrl, // 🔴 CẮM ĐƯỜNG LINK HTTPS XỊN VÀO ĐÂY
+        productImageUrl: cloudinaryUrl,
         productName: _nameController.text.trim(),
         price: double.parse(_priceController.text.trim()),
         specifications: specificationsMap,
@@ -185,7 +185,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         category: _selectedCategory ?? 'Other',
       );
 
-      // 4. Bắn vào Database
+      // 4. Nạp vào Database
       await _firestoreService.addProduct(newProduct.toMap());
 
       if (mounted) {
