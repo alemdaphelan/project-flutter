@@ -3,6 +3,10 @@ import 'package:cached_network_image/cached_network_image.dart'; // Đã thêm t
 import 'package:project_flutter/features/HomePage/widgets/ProductList.dart';
 import 'package:project_flutter/firestore_service.dart';
 import 'package:project_flutter/shared/models/user_profile.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // KỸ SƯ IMPORT THÊM ĐỂ LẤY CURRENT USER ID
+
+// KỸ SƯ IMPORT MÀN HÌNH ĐÁNH GIÁ VÀO ĐÂY:
+import 'package:project_flutter/features/Review/ReviewScreen.dart';
 
 class ProfileScreen extends StatelessWidget {
   final UserProfile userProfile;
@@ -61,7 +65,10 @@ class ProfileScreen extends StatelessWidget {
                 ],
               ),
             ),
-            _buildSectionTitle(),
+
+            // 🔴 THAY ĐỔI 1: Truyền context vào đây để hàm con có thể điều hướng trang
+            _buildSectionTitle(context),
+
             // ⚠️ LƯU Ý: Đảm bảo bên trong ProductList đã có shrinkWrap: true và physics: NeverScrollableScrollPhysics()
             ProductList(
               firestore: _firestore,
@@ -184,7 +191,8 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionTitle() {
+  // 🔴 THAY ĐỔI 2: Hàm này nhận BuildContext hứng từ hàm build chính ném xuống
+  Widget _buildSectionTitle(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
       child: Row(
@@ -195,7 +203,24 @@ class ProfileScreen extends StatelessWidget {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           OutlinedButton.icon(
-            onPressed: () {},
+            // ========================================================
+            // KỸ SƯ RÁP CODE ĐIỀU HƯỚNG SANG MÀN HÌNH REVIEW Ở ĐÂY:
+            // ========================================================
+            onPressed: () {
+              String currentUid = FirebaseAuth.instance.currentUser?.uid ?? '';
+
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => SellerReviewsScreen(
+                    sellerId: userProfile
+                        .uid, // Mở kho review của chính chủ profile này
+                    currentUserId: currentUid, // ID thằng đang đi xem
+                  ),
+                ),
+              );
+            },
+            // ========================================================
             style: OutlinedButton.styleFrom(
               foregroundColor: primaryTeal,
               side: BorderSide(color: primaryTeal),

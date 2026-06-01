@@ -4,6 +4,8 @@ import 'package:project_flutter/firestore_service.dart';
 import 'package:project_flutter/features/Notification/NotificationModel.dart';
 // KỸ SƯ IMPORT CÁC MÀN HÌNH ĐÍCH ĐỂ CHUYỂN HƯỚNG
 import 'package:project_flutter/features/TinNhan/screens/chat_screen.dart';
+import 'package:project_flutter/features/payment/screens/order_status_screen.dart';
+import 'package:project_flutter/features/Review/ReviewScreen.dart';
 
 class NotificationScreen extends StatefulWidget {
   final String userId;
@@ -92,8 +94,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
         if (context.mounted) {
           switch (noti.type) {
             case NotificationType.chat:
-            case NotificationType.offer_received:
-            case NotificationType.offer_accepted:
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -104,7 +104,28 @@ class _NotificationScreenState extends State<NotificationScreen> {
                 ),
               );
               break;
-
+            case NotificationType.offer_received:
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ChatScreen(
+                    chatRoomId: noti.relatedId,
+                    titleName: "Thương lượng giá",
+                  ),
+                ),
+              );
+              break;
+            case NotificationType.offer_accepted:
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ChatScreen(
+                    chatRoomId: noti.relatedId,
+                    titleName: "Chấp nhận thương lượng giá",
+                  ),
+                ),
+              );
+              break;
             case NotificationType.review:
               debugPrint(
                 "Nhảy sang trang Review với sellerId: ${noti.relatedId}",
@@ -112,11 +133,62 @@ class _NotificationScreenState extends State<NotificationScreen> {
               break;
 
             case NotificationType.order_purchased:
-            case NotificationType.order_delivered:
             case NotificationType.order_cancelled:
-              debugPrint("Nhảy sang đơn hàng ID: ${noti.relatedId}");
+            case NotificationType.system:
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (c) => const Center(
+                  child: CircularProgressIndicator(color: Color(0xFF1B6B60)),
+                ),
+              );
+
+              try {
+                var orderSnap = await FirebaseFirestore.instance
+                    .collection('orders')
+                    .doc(noti.relatedId)
+                    .get();
+
+                if (context.mounted) Navigator.pop(context);
+
+                if (orderSnap.exists) {
+                  bool iAmBuyer = orderSnap['buyerId'] == widget.userId;
+                  if (context.mounted) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => OrderStatusScreen(
+                          orderId: noti.relatedId,
+                          isBuyer: iAmBuyer,
+                        ),
+                      ),
+                    );
+                  }
+                } else {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Rất tiếc, đơn hàng này không còn tồn tại!',
+                        ),
+                      ),
+                    );
+                  }
+                }
+              } catch (e) {
+                if (context.mounted) Navigator.pop(context);
+              }
               break;
-            default:
+            case NotificationType.order_delivered:
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SellerReviewsScreen(
+                    sellerId: noti.relatedId,
+                    currentUserId: widget.userId,
+                  ),
+                ),
+              );
               break;
           }
         }
@@ -161,10 +233,56 @@ class _NotificationScreenState extends State<NotificationScreen> {
                         : '',
                     style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
                   ),
+
+                  // ========================================================
+                  // KỸ SƯ THÊM THẺ CHỨA NÚT ĐÁNH GIÁ KHI ĐƠN HÀNG ĐÃ GIAO
+                  // ========================================================
+                  if (noti.type == NotificationType.order_delivered)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 10.0),
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(
+                            color: Colors.orange,
+                            width: 1.2,
+                          ),
+                          minimumSize: const Size(135, 34),
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          backgroundColor: Colors.orange.shade50,
+                        ),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => SellerReviewsScreen(
+                                sellerId: noti.relatedId,
+                                currentUserId: widget.userId,
+                              ),
+                            ),
+                          );
+                        },
+                        icon: const Icon(
+                          Icons.star_rounded,
+                          color: Colors.orange,
+                          size: 18,
+                        ),
+                        label: const Text(
+                          'Đánh giá ngay',
+                          style: TextStyle(
+                            color: Colors.orange,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  // ========================================================
                 ],
               ),
             ),
-            // Vẽ cái chấm đỏ huyền thoại
             if (!noti.isRead)
               Container(
                 margin: const EdgeInsets.only(top: 4),
@@ -204,7 +322,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         break;
       case NotificationType.offer_received:
       case NotificationType.offer_accepted:
-        iconData = Icons.handshake_outlined; // Icon bắt tay thương lượng
+        iconData = Icons.handshake_outlined;
         bagColor = Colors.orange.shade100;
         iconColor = Colors.orange.shade700;
         break;

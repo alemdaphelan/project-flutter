@@ -20,8 +20,17 @@ class SellerReviewsScreen extends StatefulWidget {
 
 class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
   final FirestoreService _firestoreService = FirestoreService();
-  List<ReviewModel> _reviews = [];
+
+  // ========================================================
+  // KỸ SƯ CHIA DATA LÀM 2 BẢN: 1 BẢN GỐC, 1 BẢN ĐỂ HIỂN THỊ LỌC
+  // ========================================================
+  List<ReviewModel> _allReviews = []; // Chứa toàn bộ data kéo từ Firebase
+  List<ReviewModel> _filteredReviews = []; // Chứa data sau khi bấm nút lọc
   bool _isLoading = true;
+
+  // Biến lưu trạng thái đang chọn bộ lọc nào (0 = Tất cả, 5 = 5 sao, 4 = 4 sao...)
+  int _selectedFilter = 0;
+  // ========================================================
 
   @override
   void initState() {
@@ -37,10 +46,11 @@ class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
         widget.sellerId,
       );
       setState(() {
-        _reviews = data;
+        _allReviews = data;
+        _applyFilter(); // Kéo về xong thì chạy hàm lọc ngay lập tức
       });
     } catch (e) {
-      print("Lỗi load đánh giá: $e");
+      debugPrint("Lỗi load đánh giá: $e");
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -48,10 +58,25 @@ class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
     }
   }
 
-  // ==========================================
-  // LOGIC HIỂN THỊ BOTTOM SHEET ĐỂ VIẾT ĐÁNH GIÁ
+  // ========================================================
+  // KỸ SƯ THÊM HÀM XỬ LÝ LỌC LOGIC
+  // ========================================================
+  void _applyFilter() {
+    setState(() {
+      if (_selectedFilter == 0) {
+        // Nếu chọn "Tất cả" thì lấy nguyên bản gốc
+        _filteredReviews = List.from(_allReviews);
+      } else {
+        // Nếu chọn số sao, lọc những thằng có rating làm tròn bằng với số sao đó
+        _filteredReviews = _allReviews.where((review) {
+          return review.rating.toInt() == _selectedFilter;
+        }).toList();
+      }
+    });
+  }
+  // ========================================================
+
   void _showAddReviewSheet() {
-    // 1. Chặn tự sướng
     if (widget.currentUserId == widget.sellerId) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -63,10 +88,10 @@ class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
       return;
     }
 
-    // 2. CHỐT CHẶN ANTI-SPAM TẦNG UI
-    bool hasReviewed = _reviews.any(
+    bool hasReviewed = _allReviews.any(
       (review) => review.reviewerId == widget.currentUserId,
     );
+
     if (hasReviewed) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -77,14 +102,13 @@ class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
       return;
     }
 
-    double currentRating = 5.0; // Mặc định vô là cho 5 sao
+    double currentRating = 5.0;
     final TextEditingController commentController = TextEditingController();
     bool isSubmitting = false;
 
     showModalBottomSheet(
       context: context,
-      isScrollControlled:
-          true, // Cho phép sheet đẩy lên cao khi bàn phím xuất hiện
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -121,7 +145,6 @@ class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Ô nhập comment
                   TextField(
                     controller: commentController,
                     maxLines: 3,
@@ -141,7 +164,6 @@ class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Nút Gửi Đánh Giá
                   SizedBox(
                     width: double.infinity,
                     height: 50,
@@ -153,7 +175,7 @@ class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
                         ),
                       ),
                       onPressed: isSubmitting
-                          ? null // Nếu đang gửi thì khóa nút lại
+                          ? null
                           : () async {
                               if (commentController.text.trim().isEmpty) {
                                 ScaffoldMessenger.of(context).showSnackBar(
@@ -169,19 +191,16 @@ class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
                               setModalState(() => isSubmitting = true);
 
                               try {
-                                // Khởi tạo Model
                                 ReviewModel newReview = ReviewModel(
-                                  reviewId: '', // Firebase tự gen
+                                  reviewId: '',
                                   reviewerId: widget.currentUserId,
                                   sellerId: widget.sellerId,
-                                  productId:
-                                      '', // Tạm thời để trống nếu đây là đánh giá chung người bán
+                                  productId: '',
                                   rating: currentRating,
                                   comment: commentController.text.trim(),
-                                  time: '', // Firebase tự lo
+                                  time: DateTime.now().toString(),
                                 );
 
-                                // Bắn lên mây
                                 await _firestoreService.addReview(
                                   newReview.toMap(),
                                 );
@@ -229,6 +248,79 @@ class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
     );
   }
 
+  // ========================================================
+  // KỸ SƯ VẼ KHU VỰC NÚT BẤM FILTER
+  // ========================================================
+  Widget _buildFilterSection() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      color: Colors.white,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          children: [
+            _buildFilterChip('Tất cả', 0),
+            const SizedBox(width: 8),
+            _buildFilterChip('5 Sao', 5),
+            const SizedBox(width: 8),
+            _buildFilterChip('4 Sao', 4),
+            const SizedBox(width: 8),
+            _buildFilterChip('3 Sao', 3),
+            const SizedBox(width: 8),
+            _buildFilterChip('2 Sao', 2),
+            const SizedBox(width: 8),
+            _buildFilterChip('1 Sao', 1),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(String label, int filterValue) {
+    bool isSelected = _selectedFilter == filterValue;
+    return ChoiceChip(
+      label: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? Colors.white : Colors.black87,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+          if (filterValue > 0) ...[
+            const SizedBox(width: 4),
+            Icon(
+              Icons.star,
+              size: 14,
+              color: isSelected ? Colors.amberAccent : Colors.amber,
+            ),
+          ],
+        ],
+      ),
+      selected: isSelected,
+      selectedColor: const Color(0xFF1B6B60), // Màu xanh chủ đạo của app
+      backgroundColor: Colors.grey.shade200,
+      onSelected: (bool selected) {
+        if (selected) {
+          setState(() {
+            _selectedFilter = filterValue;
+            _applyFilter(); // Bấm cái là cập nhật list hiển thị ngay
+          });
+        }
+      },
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(
+          color: isSelected ? const Color(0xFF1B6B60) : Colors.transparent,
+        ),
+      ),
+    );
+  }
+  // ========================================================
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -239,7 +331,7 @@ class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
           style: TextStyle(color: Colors.black),
         ),
         backgroundColor: Colors.white,
-        elevation: 1,
+        elevation: 0, // Bỏ bóng đổ để dính liền với thanh filter
         leading: IconButton(
           icon: const Icon(
             Icons.arrow_back_ios_new,
@@ -249,21 +341,43 @@ class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFF1B6B60)),
-            )
-          : _reviews.isEmpty
-          ? _buildEmptyState() // Trạng thái chưa có ai đánh giá
-          : ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: _reviews.length,
-              separatorBuilder: (context, index) => const Divider(height: 32),
-              itemBuilder: (context, index) {
-                final review = _reviews[index];
-                return _buildReviewItem(review);
-              },
-            ),
+      body: Column(
+        children: [
+          // Gắn thanh filter ngay dưới AppBar
+          if (!_isLoading && _allReviews.isNotEmpty) _buildFilterSection(),
+
+          // Gạch ngang phân cách
+          if (!_isLoading && _allReviews.isNotEmpty)
+            const Divider(height: 1, thickness: 1, color: Color(0xFFEEEEEE)),
+
+          Expanded(
+            child: _isLoading
+                ? const Center(
+                    child: CircularProgressIndicator(color: Color(0xFF1B6B60)),
+                  )
+                : _allReviews.isEmpty
+                ? _buildEmptyState()
+                : _filteredReviews.isEmpty
+                // Nếu có data nhưng bộ lọc không khớp thằng nào
+                ? Center(
+                    child: Text(
+                      'Không có đánh giá $_selectedFilter sao nào.',
+                      style: TextStyle(color: Colors.grey.shade600),
+                    ),
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _filteredReviews.length, // Xài list đã lọc
+                    separatorBuilder: (context, index) =>
+                        const Divider(height: 32),
+                    itemBuilder: (context, index) {
+                      final review = _filteredReviews[index];
+                      return _buildReviewItem(review);
+                    },
+                  ),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: const Color(0xFF1B6B60),
         onPressed: _showAddReviewSheet,
@@ -304,7 +418,6 @@ class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Avatar
         CircleAvatar(
           radius: 20,
           backgroundColor: Colors.grey.shade300,
@@ -316,7 +429,6 @@ class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
               : null,
         ),
         const SizedBox(width: 12),
-        // Nội dung review
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -344,7 +456,9 @@ class _SellerReviewsScreenState extends State<SellerReviewsScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                review.time.split(' ')[0],
+                review.time.split(
+                  ' ',
+                )[0], // Cắt bỏ phần giờ phút, lấy ngày thôi
                 style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
               ),
             ],
