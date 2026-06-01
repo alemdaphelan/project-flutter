@@ -11,6 +11,7 @@ import 'package:project_flutter/features/payment/widgets/bank_account_card.dart'
 import 'package:project_flutter/features/payment/widgets/searchable_address_dropdown.dart';
 import 'package:flutter/services.dart';
 import 'package:project_flutter/cloudinary_service.dart';
+import 'package:project_flutter/firestore_service.dart';
 
 enum EditProfileTab { basicInfo, bankAccount }
 
@@ -131,26 +132,12 @@ class _BasicInfoTabState extends State<_BasicInfoTab> {
   String? _selectedWardName;
   bool _isAddressLoading = true;
 
-  // Sở thích — danh sách gợi ý phù hợp sàn C2C đồ cũ
-  static const List<String> _interestOptions = [
-    'Điện thoại',
-    'Laptop',
-    'Máy tính bảng',
-    'Màn hình',
-    'Tai nghe',
-    'Loa',
-    'Máy ảnh',
-    'Đồng hồ',
-    'Sách',
-    'Quần áo',
-    'Giày dép',
-    'Túi xách',
-    'Đồ gia dụng',
-    'Đồ chơi',
-    'Xe đạp',
-    'Dụng cụ thể thao',
-  ];
+  // ── Danh mục từ Firebase (thay vì hardcode) ──
+  List<Map<String, dynamic>> _firebaseCategories = [];
+  bool _isCategoriesLoading = true;
   final Set<String> _selectedInterests = {};
+  
+  final FirestoreService _firestoreService = FirestoreService();
 
   // Avatar
   File? _pickedAvatar;
@@ -169,6 +156,7 @@ class _BasicInfoTabState extends State<_BasicInfoTab> {
     super.initState();
     _loadProfile();
     _loadAddressData();
+    _loadCategoriesFromFirebase();
   }
 
   @override
@@ -275,6 +263,21 @@ class _BasicInfoTabState extends State<_BasicInfoTab> {
     } catch (e) {
       debugPrint('Lỗi load address: $e');
       setState(() => _isAddressLoading = false);
+    }
+  }
+
+  // ── Load danh mục từ Firebase (giống CreatePost) ──
+  Future<void> _loadCategoriesFromFirebase() async {
+    try {
+      List<Map<String, dynamic>> cats =
+          await _firestoreService.getCategories();
+      setState(() {
+        _firebaseCategories = cats;
+        _isCategoriesLoading = false;
+      });
+    } catch (e) {
+      debugPrint('Lỗi load danh mục: $e');
+      setState(() => _isCategoriesLoading = false);
     }
   }
 
@@ -633,46 +636,68 @@ class _BasicInfoTabState extends State<_BasicInfoTab> {
               style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
             ),
             const SizedBox(height: 14),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _interestOptions.map((interest) {
-                final selected = _selectedInterests.contains(interest);
-                return GestureDetector(
-                  onTap: () => setState(() {
-                    if (selected) {
-                      _selectedInterests.remove(interest);
-                    } else {
-                      _selectedInterests.add(interest);
-                    }
-                  }),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 150),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: selected ? primaryTeal : Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: selected ? primaryTeal : Colors.grey.shade300,
+            // ── Hiển thị loading hoặc danh mục ──
+            _isCategoriesLoading
+                ? const SizedBox(
+                    height: 60,
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: primaryTeal,
+                        strokeWidth: 2,
                       ),
                     ),
-                    child: Text(
-                      interest,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: selected ? Colors.white : Colors.grey.shade700,
-                        fontWeight: selected
-                            ? FontWeight.w600
-                            : FontWeight.normal,
+                  )
+                : _firebaseCategories.isEmpty
+                    ? Center(
+                        child: Text(
+                          'Chưa có danh mục nào',
+                          style: TextStyle(
+                            color: Colors.grey.shade500,
+                            fontSize: 13,
+                          ),
+                        ),
+                      )
+                    : Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _firebaseCategories.map((cat) {
+                          final categoryName = cat['name'] as String? ?? '';
+                          final selected = _selectedInterests.contains(categoryName);
+                          return GestureDetector(
+                            onTap: () => setState(() {
+                              if (selected) {
+                                _selectedInterests.remove(categoryName);
+                              } else {
+                                _selectedInterests.add(categoryName);
+                              }
+                            }),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 150),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: selected ? primaryTeal : Colors.white,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: selected ? primaryTeal : Colors.grey.shade300,
+                                ),
+                              ),
+                              child: Text(
+                                categoryName,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: selected ? Colors.white : Colors.grey.shade700,
+                                  fontWeight: selected
+                                      ? FontWeight.w600
+                                      : FontWeight.normal,
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
                       ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
             const SizedBox(height: 36),
 
             // ── Nút lưu ──

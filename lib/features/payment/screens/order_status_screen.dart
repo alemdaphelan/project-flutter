@@ -27,6 +27,7 @@ class _OrderStatusScreenState extends State<OrderStatusScreen> {
   String? _trackingError;
   String? _carrierError;
   bool _isActing = false;
+  bool _expandBuyerInfo = false;  // ← NEW: Collapse/expand buyer info
 
   @override
   void dispose() {
@@ -82,64 +83,216 @@ class _OrderStatusScreenState extends State<OrderStatusScreen> {
     );
   }
 
-  // ── Tóm tắt đơn hàng ──
+  // ── Tóm tắt đơn hàng (sản phẩm + thông tin buyer) ──
   Widget _buildOrderSummary(OrderModel order) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: lightTeal,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          // Ảnh sản phẩm
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Image.network(
-              order.productImageUrl,
-              width: 56,
-              height: 56,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                width: 56,
-                height: 56,
-                color: Colors.grey.shade200,
-                child: const Icon(Icons.image_not_supported,
-                    color: Colors.grey),
+    return Column(
+      children: [
+        // ── Card sản phẩm ──
+        Container(
+          margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: lightTeal,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              // Ảnh sản phẩm
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  order.productImageUrl,
+                  width: 56,
+                  height: 56,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    width: 56,
+                    height: 56,
+                    color: Colors.grey.shade200,
+                    child: const Icon(Icons.image_not_supported,
+                        color: Colors.grey),
+                  ),
+                ),
               ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(order.productName,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 14),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis),
-                const SizedBox(height: 2),
-                Text(
-                  '${order.price.toStringAsFixed(0)} VNĐ  •  ${order.paymentMethod}',
-                  style:
-                      TextStyle(color: Colors.grey.shade600, fontSize: 12),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(order.productName,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 14),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${order.price.toStringAsFixed(0)} VNĐ  •  ${order.paymentMethod}',
+                      style:
+                          TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '📦 ${order.deliveryAddress}',
+                      style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 11),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  '📦 ${order.deliveryAddress}',
-                  style: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: 11),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+
+        // ── Card thông tin người mua (collapsible) ──
+        Container(
+          margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+          decoration: BoxDecoration(
+            color: lightTeal,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            children: [
+              // ── Header (expandable) ──
+              GestureDetector(
+                onTap: () => setState(() => _expandBuyerInfo = !_expandBuyerInfo),
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.location_on_outlined,
+                        color: primaryTeal,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'THÔNG TIN GIAO HÀNG',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: primaryTeal,
+                                fontSize: 12,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              order.receiverName,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        _expandBuyerInfo
+                            ? Icons.expand_less
+                            : Icons.expand_more,
+                        color: primaryTeal,
+                        size: 24,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // ── Content (expanded) ──
+              if (_expandBuyerInfo)
+                Container(
+                  padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Divider
+                      Divider(
+                        color: Colors.grey.shade300,
+                        thickness: 1,
+                        height: 16,
+                      ),
+
+                      // Tên người nhận
+                      _buildBuyerInfoRow(
+                        icon: '👤',
+                        label: 'Người nhận',
+                        value: order.receiverName,
+                      ),
+                      const SizedBox(height: 12),
+
+                      // SĐT
+                      _buildBuyerInfoRow(
+                        icon: '📱',
+                        label: 'Số điện thoại',
+                        value: order.receiverPhone,
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Địa chỉ đầy đủ
+                      _buildBuyerInfoRow(
+                        icon: '📍',
+                        label: 'Địa chỉ giao hàng',
+                        value: order.deliveryAddress,
+                        multiline: true,
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Helper: Dòng thông tin người mua
+  Widget _buildBuyerInfoRow({
+    required String icon,
+    required String label,
+    required String value,
+    bool multiline = false,
+  }) {
+    return Row(
+      crossAxisAlignment:
+          multiline ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+      children: [
+        Text(icon, style: const TextStyle(fontSize: 16)),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0.3,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                  color: Colors.black87,
+                ),
+                maxLines: multiline ? null : 1,
+                overflow: multiline ? TextOverflow.clip : TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

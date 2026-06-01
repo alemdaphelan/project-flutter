@@ -4,6 +4,8 @@ import 'package:project_flutter/features/login-register/screens/login_screen.dar
 import 'package:project_flutter/features/HomePage/screens/edit_profile_screen.dart';
 // KỸ SƯ IMPORT THÊM MÀN HÌNH SAVED POSTS VÀO ĐÂY:
 import 'package:project_flutter/features/HomePage/screens/SavedPostsScreen.dart';
+import 'package:project_flutter/features/HomePage/screens/UserProfile.dart';
+import 'package:project_flutter/shared/models/user_profile.dart';
 
 class CustomDrawer extends StatelessWidget {
   const CustomDrawer({super.key});
@@ -38,10 +40,21 @@ class CustomDrawer extends StatelessWidget {
                   GestureDetector(
                     onTap: () {
                       Navigator.pop(context);
-                      // TODO: Điều hướng đến UserProfile screen ở đây
-                      // Navigator.push(context, MaterialPageRoute(
-                      //   builder: (_) => UserProfileScreen(userId: user?.uid ?? ''),
-                      // ));
+                      // Điều hướng đến UserProfile screen
+                      final user = FirebaseAuth.instance.currentUser;
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ProfileScreen(
+                            userProfile: UserProfile(
+                              uid: user?.uid ?? '',
+                              displayName: user?.displayName,
+                              email: user?.email,
+                              avatarUrl: user?.photoURL,
+                            ),
+                          ),
+                        ),
+                      );
                     },
                     child: CircleAvatar(
                       radius: 28,
@@ -70,7 +83,21 @@ class CustomDrawer extends StatelessWidget {
                     child: GestureDetector(
                       onTap: () {
                         Navigator.pop(context);
-                        // TODO: Điều hướng đến UserProfile screen
+                        // Điều hướng đến UserProfile screen
+                        final user = FirebaseAuth.instance.currentUser;
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ProfileScreen(
+                              userProfile: UserProfile(
+                                uid: user?.uid ?? '',
+                                displayName: user?.displayName,
+                                email: user?.email,
+                                avatarUrl: user?.photoURL,
+                              ),
+                            ),
+                          ),
+                        );
                       },
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
