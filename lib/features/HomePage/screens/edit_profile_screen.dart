@@ -55,8 +55,11 @@ class _EditProfileScreenState extends State<EditProfileScreen>
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              color: Colors.black, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: Colors.black,
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
@@ -73,21 +76,26 @@ class _EditProfileScreenState extends State<EditProfileScreen>
           unselectedLabelColor: Colors.grey,
           indicatorColor: primaryTeal,
           indicatorWeight: 3,
-          labelStyle:
-              const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+          labelStyle: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 13,
+          ),
           unselectedLabelStyle: const TextStyle(fontSize: 13),
           tabs: const [
-            Tab(icon: Icon(Icons.person_outline, size: 20), text: 'Thông tin cá nhân'),
-            Tab(icon: Icon(Icons.account_balance_outlined, size: 20), text: 'Tài khoản ngân hàng'),
+            Tab(
+              icon: Icon(Icons.person_outline, size: 20),
+              text: 'Thông tin cá nhân',
+            ),
+            Tab(
+              icon: Icon(Icons.account_balance_outlined, size: 20),
+              text: 'Tài khoản ngân hàng',
+            ),
           ],
         ),
       ),
       body: TabBarView(
         controller: _tabController,
-        children: const [
-          _BasicInfoTab(),
-          _BankAccountTab(),
-        ],
+        children: const [_BasicInfoTab(), _BankAccountTab()],
       ),
     );
   }
@@ -124,10 +132,22 @@ class _BasicInfoTabState extends State<_BasicInfoTab> {
 
   // Sở thích — danh sách gợi ý phù hợp sàn C2C đồ cũ
   static const List<String> _interestOptions = [
-    'Điện thoại', 'Laptop', 'Máy tính bảng', 'Màn hình',
-    'Tai nghe', 'Loa', 'Máy ảnh', 'Đồng hồ',
-    'Sách', 'Quần áo', 'Giày dép', 'Túi xách',
-    'Đồ gia dụng', 'Đồ chơi', 'Xe đạp', 'Dụng cụ thể thao',
+    'Điện thoại',
+    'Laptop',
+    'Máy tính bảng',
+    'Màn hình',
+    'Tai nghe',
+    'Loa',
+    'Máy ảnh',
+    'Đồng hồ',
+    'Sách',
+    'Quần áo',
+    'Giày dép',
+    'Túi xách',
+    'Đồ gia dụng',
+    'Đồ chơi',
+    'Xe đạp',
+    'Dụng cụ thể thao',
   ];
   final Set<String> _selectedInterests = {};
 
@@ -209,8 +229,9 @@ class _BasicInfoTabState extends State<_BasicInfoTab> {
   // ── Load dữ liệu tỉnh/phường từ JSON ──
   Future<void> _loadAddressData() async {
     try {
-      final String response =
-          await rootBundle.loadString('assets/data/provinces.json');
+      final String response = await rootBundle.loadString(
+        'assets/data/provinces.json',
+      );
       final List<dynamic> data = json.decode(response);
       final provinces =
           data.firstWhere((e) => e['name'] == 'provinces')['data'] as List;
@@ -229,12 +250,12 @@ class _BasicInfoTabState extends State<_BasicInfoTab> {
             orElse: () => {},
           );
           if (matchProvince.isNotEmpty) {
-            _selectedProvinceCode =
-                matchProvince['province_code'].toString();
+            _selectedProvinceCode = matchProvince['province_code'].toString();
             _selectedProvinceName = matchProvince['name'];
             _displayWards = _allWards
-                .where((w) =>
-                    w['province_code'].toString() == _selectedProvinceCode)
+                .where(
+                  (w) => w['province_code'].toString() == _selectedProvinceCode,
+                )
                 .toList();
 
             if (_savedWardName != null) {
@@ -259,8 +280,10 @@ class _BasicInfoTabState extends State<_BasicInfoTab> {
   // ── Chọn ảnh từ thư viện ──
   Future<void> _pickAvatar() async {
     final picker = ImagePicker();
-    final XFile? picked =
-        await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    final XFile? picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+    );
     if (picked == null) return;
     setState(() {
       _pickedAvatar = File(picked.path);
@@ -271,8 +294,9 @@ class _BasicInfoTabState extends State<_BasicInfoTab> {
   Future<String?> _uploadAvatarToCloudinary(File file) async {
     const cloudName = 'db9hzryrx';
     const preset = 'selling_app_avatar';
-    final uri =
-        Uri.parse('https://api.cloudinary.com/v1_1/$cloudName/image/upload');
+    final uri = Uri.parse(
+      'https://api.cloudinary.com/v1_1/$cloudName/image/upload',
+    );
 
     final request = http.MultipartRequest('POST', uri)
       ..fields['upload_preset'] = preset
@@ -379,8 +403,7 @@ class _BasicInfoTabState extends State<_BasicInfoTab> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Center(
-          child: CircularProgressIndicator(color: primaryTeal));
+      return const Center(child: CircularProgressIndicator(color: primaryTeal));
     }
 
     return SingleChildScrollView(
@@ -408,14 +431,18 @@ class _BasicInfoTabState extends State<_BasicInfoTab> {
                         backgroundImage: _pickedAvatar != null
                             ? FileImage(_pickedAvatar!) as ImageProvider
                             : (_currentAvatarUrl != null &&
-                                    _currentAvatarUrl!.isNotEmpty)
-                                ? NetworkImage(_currentAvatarUrl!)
-                                : null,
-                        child: (_pickedAvatar == null &&
+                                  _currentAvatarUrl!.isNotEmpty)
+                            ? NetworkImage(_currentAvatarUrl!)
+                            : null,
+                        child:
+                            (_pickedAvatar == null &&
                                 (_currentAvatarUrl == null ||
                                     _currentAvatarUrl!.isEmpty))
-                            ? const Icon(Icons.person,
-                                size: 48, color: primaryTeal)
+                            ? const Icon(
+                                Icons.person,
+                                size: 48,
+                                color: primaryTeal,
+                              )
                             : null,
                       ),
                     ),
@@ -434,9 +461,15 @@ class _BasicInfoTabState extends State<_BasicInfoTab> {
                                 width: 14,
                                 height: 14,
                                 child: CircularProgressIndicator(
-                                    color: Colors.white, strokeWidth: 2))
-                            : const Icon(Icons.camera_alt,
-                                size: 14, color: Colors.white),
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(
+                                Icons.camera_alt,
+                                size: 14,
+                                color: Colors.white,
+                              ),
                       ),
                     ),
                   ],
@@ -447,8 +480,7 @@ class _BasicInfoTabState extends State<_BasicInfoTab> {
             Center(
               child: Text(
                 FirebaseAuth.instance.currentUser?.email ?? '',
-                style:
-                    TextStyle(color: Colors.grey.shade500, fontSize: 13),
+                style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
               ),
             ),
             if (_pickedAvatar != null) ...[
@@ -457,9 +489,10 @@ class _BasicInfoTabState extends State<_BasicInfoTab> {
                 child: Text(
                   'Ảnh mới sẽ được lưu khi bạn nhấn "Lưu thay đổi"',
                   style: TextStyle(
-                      color: primaryTeal,
-                      fontSize: 12,
-                      fontStyle: FontStyle.italic),
+                    color: primaryTeal,
+                    fontSize: 12,
+                    fontStyle: FontStyle.italic,
+                  ),
                 ),
               ),
             ],
@@ -471,25 +504,25 @@ class _BasicInfoTabState extends State<_BasicInfoTab> {
 
             TextFormField(
               controller: _nameCtrl,
-              decoration:
-                  _inputStyle('Họ và tên hiển thị', Icons.person_outline),
-              validator: (val) =>
-                  val == null || val.trim().isEmpty
-                      ? 'Vui lòng nhập họ tên'
-                      : null,
+              decoration: _inputStyle(
+                'Họ và tên hiển thị',
+                Icons.person_outline,
+              ),
+              validator: (val) => val == null || val.trim().isEmpty
+                  ? 'Vui lòng nhập họ tên'
+                  : null,
             ),
             const SizedBox(height: 14),
 
             // Email chỉ đọc — không cho sửa
             InputDecorator(
-              decoration: _inputStyle('Email', Icons.email_outlined).copyWith(
-                filled: true,
-                fillColor: Colors.grey.shade100,
-              ),
+              decoration: _inputStyle(
+                'Email',
+                Icons.email_outlined,
+              ).copyWith(filled: true, fillColor: Colors.grey.shade100),
               child: Text(
                 FirebaseAuth.instance.currentUser?.email ?? '—',
-                style: TextStyle(
-                    color: Colors.grey.shade600, fontSize: 15),
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 15),
               ),
             ),
             const SizedBox(height: 4),
@@ -497,8 +530,7 @@ class _BasicInfoTabState extends State<_BasicInfoTab> {
               padding: const EdgeInsets.only(left: 4),
               child: Text(
                 'Email không thể thay đổi',
-                style:
-                    TextStyle(color: Colors.grey.shade400, fontSize: 11),
+                style: TextStyle(color: Colors.grey.shade400, fontSize: 11),
               ),
             ),
             const SizedBox(height: 14),
@@ -507,7 +539,9 @@ class _BasicInfoTabState extends State<_BasicInfoTab> {
               controller: _phoneCtrl,
               keyboardType: TextInputType.phone,
               decoration: _inputStyle(
-                  'Số điện thoại', Icons.phone_android_outlined),
+                'Số điện thoại',
+                Icons.phone_android_outlined,
+              ),
               validator: (val) {
                 if (val == null || val.trim().isEmpty) return null;
                 if (!RegExp(r'^(0|\+84)[0-9]{9}$').hasMatch(val.trim())) {
@@ -541,13 +575,15 @@ class _BasicInfoTabState extends State<_BasicInfoTab> {
                         primaryTeal: primaryTeal,
                         onSelected: (item) {
                           setState(() {
-                            _selectedProvinceCode =
-                                item['province_code'].toString();
+                            _selectedProvinceCode = item['province_code']
+                                .toString();
                             _selectedProvinceName = item['name'];
                             _displayWards = _allWards
-                                .where((w) =>
-                                    w['province_code'].toString() ==
-                                    _selectedProvinceCode)
+                                .where(
+                                  (w) =>
+                                      w['province_code'].toString() ==
+                                      _selectedProvinceCode,
+                                )
                                 .toList();
                             _selectedWardCode = null;
                             _selectedWardName = null;
@@ -581,8 +617,9 @@ class _BasicInfoTabState extends State<_BasicInfoTab> {
                       TextFormField(
                         controller: _streetCtrl,
                         decoration: _inputStyle(
-                            'Số nhà, tên đường, tổ/ấp...',
-                            Icons.signpost_outlined),
+                          'Số nhà, tên đường, tổ/ấp...',
+                          Icons.signpost_outlined,
+                        ),
                       ),
                     ],
                   ),
@@ -592,12 +629,11 @@ class _BasicInfoTabState extends State<_BasicInfoTab> {
               controller: _bioCtrl,
               maxLines: 3,
               maxLength: 200,
-              decoration: _inputStyle(
-                      'Giới thiệu bản thân', Icons.info_outline)
+              decoration: _inputStyle('Giới thiệu bản thân', Icons.info_outline)
                   .copyWith(
-                counterText: '${_bioCtrl.text.length}/200',
-                helperText: 'Mô tả ngắn về bạn — hiện trên trang cá nhân',
-              ),
+                    counterText: '${_bioCtrl.text.length}/200',
+                    helperText: 'Mô tả ngắn về bạn — hiện trên trang cá nhân',
+                  ),
               onChanged: (_) => setState(() {}),
             ),
             const SizedBox(height: 28),
@@ -607,9 +643,7 @@ class _BasicInfoTabState extends State<_BasicInfoTab> {
             const SizedBox(height: 6),
             Text(
               'Chọn những danh mục bạn hay mua/bán để nhận gợi ý phù hợp hơn',
-              style: TextStyle(
-                  color: Colors.grey.shade500,
-                  fontSize: 12),
+              style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
             ),
             const SizedBox(height: 14),
             Wrap(
@@ -628,25 +662,21 @@ class _BasicInfoTabState extends State<_BasicInfoTab> {
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 150),
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 8),
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
-                      color: selected
-                          ? primaryTeal
-                          : Colors.white,
+                      color: selected ? primaryTeal : Colors.white,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: selected
-                            ? primaryTeal
-                            : Colors.grey.shade300,
+                        color: selected ? primaryTeal : Colors.grey.shade300,
                       ),
                     ),
                     child: Text(
                       interest,
                       style: TextStyle(
                         fontSize: 13,
-                        color: selected
-                            ? Colors.white
-                            : Colors.grey.shade700,
+                        color: selected ? Colors.white : Colors.grey.shade700,
                         fontWeight: selected
                             ? FontWeight.w600
                             : FontWeight.normal,
@@ -667,7 +697,8 @@ class _BasicInfoTabState extends State<_BasicInfoTab> {
                   backgroundColor: primaryTeal,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 onPressed: _isSaving ? null : _save,
                 child: _isSaving
@@ -675,7 +706,9 @@ class _BasicInfoTabState extends State<_BasicInfoTab> {
                         height: 20,
                         width: 20,
                         child: CircularProgressIndicator(
-                            color: Colors.white, strokeWidth: 2),
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
                       )
                     : const Text(
                         'LƯU THAY ĐỔI',
@@ -713,8 +746,7 @@ class _BasicInfoTabState extends State<_BasicInfoTab> {
       prefixIcon: Icon(icon, color: primaryTeal, size: 20),
       filled: true,
       fillColor: Colors.grey.shade50,
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(color: Colors.grey.shade300),
@@ -804,28 +836,38 @@ class _BankAccountTabState extends State<_BankAccountTab> {
                 return Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.account_balance_outlined,
-                        size: 60, color: Colors.grey.shade300),
+                    Icon(
+                      Icons.account_balance_outlined,
+                      size: 60,
+                      color: Colors.grey.shade300,
+                    ),
                     const SizedBox(height: 12),
-                    Text('Chưa có tài khoản ngân hàng',
-                        style: TextStyle(
-                            color: Colors.grey.shade500, fontSize: 15)),
+                    Text(
+                      'Chưa có tài khoản ngân hàng',
+                      style: TextStyle(
+                        color: Colors.grey.shade500,
+                        fontSize: 15,
+                      ),
+                    ),
                     const SizedBox(height: 4),
                     Text(
-                        'Thêm tài khoản để nhận thanh toán qua VietQR',
-                        style: TextStyle(
-                            color: Colors.grey.shade400, fontSize: 12)),
+                      'Thêm tài khoản để nhận thanh toán qua VietQR',
+                      style: TextStyle(
+                        color: Colors.grey.shade400,
+                        fontSize: 12,
+                      ),
+                    ),
                     const SizedBox(height: 20),
                     OutlinedButton.icon(
-                      onPressed: () =>
-                          setState(() => _showForm = true),
+                      onPressed: () => setState(() => _showForm = true),
                       icon: const Icon(Icons.add),
                       label: const Text('Thêm tài khoản'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: primaryTeal,
                         side: const BorderSide(color: primaryTeal),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
                     ),
                   ],
@@ -835,26 +877,26 @@ class _BankAccountTabState extends State<_BankAccountTab> {
               return ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  ...accounts.map((acc) => BankAccountCard(
-                        account: acc,
-                        onSetPrimary: () =>
-                            _service.setPrimary(userId, acc.id),
-                        onDelete: () => _confirmDelete(acc),
-                      )),
+                  ...accounts.map(
+                    (acc) => BankAccountCard(
+                      account: acc,
+                      onSetPrimary: () => _service.setPrimary(userId, acc.id),
+                      onDelete: () => _confirmDelete(acc),
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   if (!_showForm)
                     OutlinedButton.icon(
-                      onPressed: () =>
-                          setState(() => _showForm = true),
+                      onPressed: () => setState(() => _showForm = true),
                       icon: const Icon(Icons.add),
                       label: const Text('Thêm tài khoản mới'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: primaryTeal,
                         side: const BorderSide(color: primaryTeal),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
-                        padding:
-                            const EdgeInsets.symmetric(vertical: 14),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
                     ),
                 ],
@@ -876,8 +918,9 @@ class _BankAccountTabState extends State<_BankAccountTab> {
                   offset: const Offset(0, -4),
                 ),
               ],
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(24)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
             ),
             child: Form(
               key: _formKey,
@@ -890,9 +933,10 @@ class _BankAccountTabState extends State<_BankAccountTab> {
                       const Text(
                         'Thêm tài khoản mới',
                         style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: primaryTeal),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: primaryTeal,
+                        ),
                       ),
                       const Spacer(),
                       IconButton(
@@ -910,16 +954,17 @@ class _BankAccountTabState extends State<_BankAccountTab> {
                   const SizedBox(height: 12),
                   DropdownButtonFormField<VietnamBank>(
                     decoration: _inputStyle(
-                        'Chọn ngân hàng', Icons.account_balance_outlined),
+                      'Chọn ngân hàng',
+                      Icons.account_balance_outlined,
+                    ),
                     value: _selectedBank,
                     items: VietnamBank.popular
-                        .map((b) => DropdownMenuItem(
-                              value: b,
-                              child: Text(b.name),
-                            ))
+                        .map(
+                          (b) =>
+                              DropdownMenuItem(value: b, child: Text(b.name)),
+                        )
                         .toList(),
-                    onChanged: (val) =>
-                        setState(() => _selectedBank = val),
+                    onChanged: (val) => setState(() => _selectedBank = val),
                     validator: (val) =>
                         val == null ? 'Vui lòng chọn ngân hàng' : null,
                   ),
@@ -928,7 +973,9 @@ class _BankAccountTabState extends State<_BankAccountTab> {
                     controller: _accountNoCtrl,
                     keyboardType: TextInputType.number,
                     decoration: _inputStyle(
-                        'Số tài khoản', Icons.credit_card_outlined),
+                      'Số tài khoản',
+                      Icons.credit_card_outlined,
+                    ),
                     validator: (val) => val == null || val.isEmpty
                         ? 'Vui lòng nhập số tài khoản'
                         : null,
@@ -938,7 +985,9 @@ class _BankAccountTabState extends State<_BankAccountTab> {
                     controller: _accountNameCtrl,
                     textCapitalization: TextCapitalization.characters,
                     decoration: _inputStyle(
-                        'Tên chủ tài khoản (IN HOA)', Icons.person_outline),
+                      'Tên chủ tài khoản (IN HOA)',
+                      Icons.person_outline,
+                    ),
                     validator: (val) => val == null || val.isEmpty
                         ? 'Vui lòng nhập tên chủ tài khoản'
                         : null,
@@ -952,7 +1001,8 @@ class _BankAccountTabState extends State<_BankAccountTab> {
                         backgroundColor: primaryTeal,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                       onPressed: _isSaving ? null : _saveAccount,
                       child: _isSaving
@@ -960,13 +1010,16 @@ class _BankAccountTabState extends State<_BankAccountTab> {
                               height: 20,
                               width: 20,
                               child: CircularProgressIndicator(
-                                  color: Colors.white, strokeWidth: 2),
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
                             )
                           : const Text(
                               'LƯU TÀI KHOẢN',
                               style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold),
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                     ),
                   ),
@@ -982,14 +1035,16 @@ class _BankAccountTabState extends State<_BankAccountTab> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isSaving = true);
     try {
-      await _service.addAccount(BankAccount(
-        id: '',
-        userId: userId,
-        bankId: _selectedBank!.id,
-        bankName: _selectedBank!.name,
-        accountNo: _accountNoCtrl.text.trim(),
-        accountName: _accountNameCtrl.text.trim().toUpperCase(),
-      ));
+      await _service.addAccount(
+        BankAccount(
+          id: '',
+          userId: userId,
+          bankId: _selectedBank!.id,
+          bankName: _selectedBank!.name,
+          accountNo: _accountNoCtrl.text.trim(),
+          accountName: _accountNameCtrl.text.trim().toUpperCase(),
+        ),
+      );
       setState(() {
         _showForm = false;
         _selectedBank = null;
@@ -999,16 +1054,18 @@ class _BankAccountTabState extends State<_BankAccountTab> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text('Đã thêm tài khoản ngân hàng!'),
-              backgroundColor: primaryTeal),
+            content: Text('Đã thêm tài khoản ngân hàng!'),
+            backgroundColor: primaryTeal,
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text('Lỗi: $e'),
-              backgroundColor: Colors.red.shade400),
+            content: Text('Lỗi: $e'),
+            backgroundColor: Colors.red.shade400,
+          ),
         );
       }
     } finally {
@@ -1024,15 +1081,15 @@ class _BankAccountTabState extends State<_BankAccountTab> {
         content: Text('Xóa ${account.bankName} - ${account.accountNo}?'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Hủy')),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Hủy'),
+          ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               _service.deleteAccount(userId, account.id);
             },
-            child:
-                const Text('Xóa', style: TextStyle(color: Colors.red)),
+            child: const Text('Xóa', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -1045,8 +1102,7 @@ class _BankAccountTabState extends State<_BankAccountTab> {
       prefixIcon: Icon(icon, color: primaryTeal, size: 20),
       filled: true,
       fillColor: Colors.grey.shade50,
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(color: Colors.grey.shade300),

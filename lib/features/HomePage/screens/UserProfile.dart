@@ -132,9 +132,15 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                _buildInfoRow(Icons.email_outlined, userProfile.email ?? 'Email không xác định'),
+                _buildInfoRow(
+                  Icons.email_outlined,
+                  userProfile.email ?? 'Email không xác định',
+                ),
                 const SizedBox(height: 4),
-                _buildInfoRow(Icons.location_on_outlined, userProfile.location ?? 'Vị trí không xác định'),
+                _buildInfoRow(
+                  Icons.location_on_outlined,
+                  userProfile.location ?? 'Vị trí không xác định',
+                ),
                 const SizedBox(height: 4),
                 Text(
                   'Tổng đánh giá: ${userProfile.totalReviews}',
