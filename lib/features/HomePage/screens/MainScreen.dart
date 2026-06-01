@@ -377,17 +377,3 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 }
-
-class OrderScreen extends StatelessWidget {
-  const OrderScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Đơn hàng của tôi')),
-      body: const Center(
-        child: Text('Tính năng quản lý đơn hàng sẽ được phát triển sau!'),
-      ),
-    );
-  }
-}

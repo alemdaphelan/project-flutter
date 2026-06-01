@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // KỸ SƯ IMPORT THÊM ĐỂ XÀI FIELDVALUE VÀ DOCUMENT
 import 'package:project_flutter/features/HomePage/Models/Product.dart';
 import 'package:project_flutter/features/HomePage/screens/UserProfile.dart';
 import 'package:project_flutter/features/HomePage/screens/DetailListing.dart';
@@ -21,6 +22,7 @@ class ProductCard extends StatelessWidget {
         product.seller?.avatarUrl ?? 'https://i.pravatar.cc/150';
     final currentUid = FirebaseAuth.instance.currentUser?.uid;
     final isOwner = currentUid != null && currentUid == product.sellerId;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(16),
@@ -81,9 +83,94 @@ class ProductCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              Text(
-                formatTimeAgo(DateTime.parse(product.time)),
-                style: const TextStyle(color: Colors.grey, fontSize: 12),
+
+              // ĐÓNG GÓI KHU VỰC THỜI GIAN VÀ NÚT LƯU BÀI VIẾT VÀO MỘT COLUMN
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    formatTimeAgo(DateTime.parse(product.time)),
+                    style: const TextStyle(color: Colors.grey, fontSize: 11),
+                  ),
+
+                  // ========================================================
+                  // KỸ SƯ RÁP BIỂU TƯỢNG VÀ LOGIC LƯU BÀI VIẾT REAL-TIME
+                  // ========================================================
+                  if (currentUid != null)
+                    StreamBuilder<DocumentSnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(currentUid)
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        bool isSaved = false;
+
+                        if (snapshot.hasData && snapshot.data!.exists) {
+                          var userData =
+                              snapshot.data!.data() as Map<String, dynamic>?;
+                          // Bốc cái mảng danh sách bài viết đã lưu về
+                          List<dynamic> savedProducts =
+                              userData?['savedProducts'] ?? [];
+                          // Kiểm tra xem ID của sản phẩm này đã nằm trong mảng chưa
+                          isSaved = savedProducts.contains(product.id);
+                        }
+
+                        return IconButton(
+                          constraints: const BoxConstraints(),
+                          padding: const EdgeInsets.only(top: 4),
+                          icon: Icon(
+                            isSaved
+                                ? Icons.bookmark_rounded
+                                : Icons.bookmark_border_rounded,
+                            color: isSaved
+                                ? const Color(0xFF1B6B60)
+                                : Colors.grey.shade400,
+                            size: 22,
+                          ),
+                          onPressed: () async {
+                            final userDocRef = FirebaseFirestore.instance
+                                .collection('users')
+                                .doc(currentUid);
+
+                            if (isSaved) {
+                              // Nếu đã lưu rồi -> Bấm vào để BỎ LƯU
+                              await userDocRef.update({
+                                'savedProducts': FieldValue.arrayRemove([
+                                  product.id,
+                                ]),
+                              });
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('💔 Đã bỏ lưu bài viết này!'),
+                                    duration: Duration(seconds: 1),
+                                  ),
+                                );
+                              }
+                            } else {
+                              // Nếu chưa lưu -> Bấm vào để LƯU BÀI VIẾT
+                              await userDocRef.update({
+                                'savedProducts': FieldValue.arrayUnion([
+                                  product.id,
+                                ]),
+                              });
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      '💖 Đã lưu bài viết vào mục yêu thích!',
+                                    ),
+                                    duration: Duration(seconds: 1),
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                        );
+                      },
+                    ),
+                  // ========================================================
+                ],
               ),
             ],
           ),
@@ -138,27 +225,13 @@ class ProductCard extends StatelessWidget {
                 size: 16,
               ),
               const SizedBox(width: 4),
-              Text(
-                product.location,
-                style: const TextStyle(color: Colors.grey, fontSize: 12),
-              ),
-              const Spacer(),
-              const Icon(Icons.favorite_border, color: Colors.grey, size: 16),
-              const SizedBox(width: 4),
-              const Text(
-                '12',
-                style: TextStyle(color: Colors.grey, fontSize: 12),
-              ),
-              const SizedBox(width: 12),
-              const Icon(
-                Icons.chat_bubble_outline,
-                color: Colors.grey,
-                size: 16,
-              ),
-              const SizedBox(width: 4),
-              const Text(
-                '3',
-                style: TextStyle(color: Colors.grey, fontSize: 12),
+              Expanded(
+                child: Text(
+                  product.location,
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),
