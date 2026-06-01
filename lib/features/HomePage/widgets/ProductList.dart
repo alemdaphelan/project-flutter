@@ -3,12 +3,15 @@ import 'package:project_flutter/features/HomePage/Models/Product.dart';
 import 'package:project_flutter/firestore_service.dart';
 import 'package:project_flutter/features/HomePage/widgets/ProductCard.dart';
 
-// 1. CHUYỂN THÀNH STATEFULWIDGET ĐỂ GIỮ STATE VÀ CACHE FUTURE
 class ProductList extends StatefulWidget {
   final FirestoreService firestore;
   final String selectedCategory;
   final String searchQuery;
   final String? userId;
+
+  /// true  → hiện cả sản phẩm đã bán (dùng cho trang profile người bán)
+  /// false → ẩn sản phẩm đã bán khỏi feed chính (default)
+  final bool showSold;
 
   const ProductList({
     super.key,
@@ -16,6 +19,7 @@ class ProductList extends StatefulWidget {
     required this.selectedCategory,
     required this.searchQuery,
     this.userId,
+    this.showSold = false,
   });
 
   @override
@@ -58,11 +62,17 @@ class _ProductListState extends State<ProductList> {
 
         List<ProductModel> productsData = snapshot.data ?? [];
 
+        // Ẩn sản phẩm đã bán khỏi feed chính
+        // Trang profile truyền showSold: true để thấy toàn bộ lịch sử
+        if (!widget.showSold) {
+          productsData = productsData.where((p) => !p.isSold).toList();
+        }
+
         if (widget.searchQuery.isNotEmpty) {
           productsData = productsData.where((product) {
-            return product.productName.toLowerCase().contains(
-              widget.searchQuery.toLowerCase(),
-            );
+            return product.productName
+                .toLowerCase()
+                .contains(widget.searchQuery.toLowerCase());
           }).toList();
         }
 

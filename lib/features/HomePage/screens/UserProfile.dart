@@ -68,6 +68,7 @@ class ProfileScreen extends StatelessWidget {
               userId: userProfile.uid,
               searchQuery: '',
               selectedCategory: 'All',
+              showSold: true, // Trang profile hiện toàn bộ lịch sử kể cả đã bán
             ),
             const SizedBox(height: 32),
           ],

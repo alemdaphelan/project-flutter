@@ -13,6 +13,8 @@ import 'package:project_flutter/features/TinNhan/screens/main_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:project_flutter/features/login-register/screens/login_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:project_flutter/shared/models/user_profile.dart';
+import 'package:project_flutter/features/HomePage/screens/UserProfile.dart';
 
 class MainScreen extends StatefulWidget {
   final User user;
@@ -143,7 +145,19 @@ class _MainScreenState extends State<MainScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.account_circle_outlined),
-            onPressed: () => _showProfileOptions(context),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ProfileScreen(
+                  userProfile: UserProfile(
+                    uid: widget.user.uid,
+                    displayName: widget.user.displayName,
+                    email: widget.user.email,
+                    avatarUrl: widget.user.photoURL,
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
       ),
