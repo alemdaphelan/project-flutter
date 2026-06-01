@@ -7,19 +7,10 @@ class OrderService {
   CollectionReference get _col => _db.collection('orders');
   CollectionReference get _listings => _db.collection('listings');
 
-  /// Tạo đơn hàng mới → đánh dấu listing là "reserved"
+  /// Tạo đơn hàng mới — KHÔNG tự động đổi status listing
+  /// Người bán tự quyết qua ManageListingScreen
   Future<String> createOrder(OrderModel order) async {
     final ref = await _col.add(order.toMap());
-
-    // Bọc riêng — lỗi update status không nên block việc tạo đơn
-    if (order.productId.isNotEmpty) {
-      try {
-        await _listings.doc(order.productId).update({'status': 'reserved'});
-      } catch (e) {
-        debugPrint('Cảnh báo: không update được status listing - $e');
-        // Không rethrow — đơn hàng vẫn được tạo thành công
-      }
-    }
 
     return ref.id;
   }
@@ -46,20 +37,13 @@ class OrderService {
     });
   }
 
-  /// Người mua xác nhận đã nhận hàng → completed + listing "sold"
+  /// Người mua xác nhận đã nhận hàng → completed
+  /// KHÔNG tự động set listing "sold" — người bán tự quyết qua ManageListingScreen
   Future<void> confirmReceived(String orderId) async {
-    final snap = await _col.doc(orderId).get();
-    final data = snap.data() as Map<String, dynamic>?;
-    final productId = data?['productId'] as String? ?? '';
-
     await _col.doc(orderId).update({
       'status': OrderStatus.completed.name,
       'updatedAt': FieldValue.serverTimestamp(),
     });
-
-    if (productId.isNotEmpty) {
-      await _listings.doc(productId).update({'status': 'sold'});
-    }
   }
 
   /// Hủy đơn → trả listing về "available"

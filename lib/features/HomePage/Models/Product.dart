@@ -1,9 +1,32 @@
 import 'package:project_flutter/shared/models/user_profile.dart';
 
-enum ProductStatus { available, reserved, sold }
+/// Trạng thái listing do NGƯỜI BÁN tự kiểm soát
+enum ListingStatus {
+  available,  // Còn hàng — hiện bình thường
+  reserved,   // Đang có đơn chờ — người bán có thể đổi về available nếu còn hàng
+  sold,       // Đã bán — ẩn khỏi feed
+}
+
+extension ListingStatusX on ListingStatus {
+  String get label {
+    switch (this) {
+      case ListingStatus.available: return 'Còn hàng';
+      case ListingStatus.reserved: return 'Đang đặt';
+      case ListingStatus.sold:     return 'Đã bán';
+    }
+  }
+
+  static ListingStatus fromString(String? s) {
+    switch (s) {
+      case 'reserved': return ListingStatus.reserved;
+      case 'sold':     return ListingStatus.sold;
+      default:         return ListingStatus.available;
+    }
+  }
+}
 
 class ProductModel {
-  final String id;           // Firestore doc ID — cần để update status
+  final String id;          // Firestore doc ID — cần để update status
   final String sellerId;
   final String sellerName;
   final String time;
@@ -14,12 +37,12 @@ class ProductModel {
   final String description;
   final String location;
   final String category;
-  final ProductStatus status; // ← MỚI
+  final ListingStatus status; // ← trạng thái do người bán quản lý
 
   UserProfile? seller;
 
   ProductModel({
-    required this.id,
+    this.id = '',
     required this.sellerId,
     this.sellerName = '',
     required this.time,
@@ -30,13 +53,14 @@ class ProductModel {
     required this.description,
     required this.location,
     required this.category,
-    this.status = ProductStatus.available,
+    this.status = ListingStatus.available,
   });
 
-  bool get isAvailable => status == ProductStatus.available;
-  bool get isReserved  => status == ProductStatus.reserved;
-  bool get isSold      => status == ProductStatus.sold;
+  bool get isAvailable => status == ListingStatus.available;
+  bool get isReserved  => status == ListingStatus.reserved;
+  bool get isSold      => status == ListingStatus.sold;
 
+  /// Lưu lên Firestore — đảm bảo sellerId và status luôn có mặt
   Map<String, dynamic> toMap() {
     return {
       'sellerId':    sellerId,
@@ -48,37 +72,25 @@ class ProductModel {
       'description': description,
       'location':    location,
       'category':    category,
+      'status':      status.name,
       'time':        DateTime.now(),
-      'status':      status.name, // ← lưu khi tạo mới
     };
   }
 
   factory ProductModel.fromFirestore(Map<String, dynamic> data, String id) {
-    final statusStr = data['status'] as String? ?? 'available';
-    final status = ProductStatus.values.firstWhere(
-      (e) => e.name == statusStr,
-      orElse: () => ProductStatus.available, // doc cũ chưa có field → available
-    );
-
     return ProductModel(
-      id:             id,
-      sellerId:       data['sellerId'] ?? '',
-      sellerName:     data['sellerName'] ?? '',
-      time:           data['time'] != null
-                        ? data['time'].toDate().toString()
-                        : DateTime.now().toString(),
-      productImageUrl: data['image'] ?? '',
-      productName:    data['name'] ?? '',
-      price:          (data['price'] ?? 0).toDouble(),
-      specifications: Map<String, dynamic>.from(data['fields'] ?? {}),
-      description:    data['description'] ?? '',
-      location:       data['location'] ?? '',
-      category:       data['category'] ?? '',
-      status:         status,
+      id:               id,
+      sellerId:         data['sellerId'] ?? '',
+      sellerName:       data['sellerName'] ?? '',
+      time:             data['time'].toDate().toString(),
+      productImageUrl:  data['image'] ?? '',
+      productName:      data['name'] ?? '',
+      price:            (data['price'] ?? 0).toDouble(),
+      specifications:   data['fields'] ?? {},
+      description:      data['description'] ?? '',
+      location:         data['location'] ?? '',
+      category:         data['category'] ?? '',
+      status:           ListingStatusX.fromString(data['status']),
     );
   }
-
-  // Giữ factory cũ (F hoa) để không breaking các chỗ khác chưa đổi
-  factory ProductModel.FromFirestore(Map<String, dynamic> data, String id) =>
-      ProductModel.fromFirestore(data, id);
 }
