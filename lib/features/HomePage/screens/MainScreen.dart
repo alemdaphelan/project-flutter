@@ -143,21 +143,42 @@ class _MainScreenState extends State<MainScreen> {
               });
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.account_circle_outlined),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => ProfileScreen(
-                  userProfile: UserProfile(
-                    uid: widget.user.uid,
-                    displayName: widget.user.displayName,
-                    email: widget.user.email,
-                    avatarUrl: widget.user.photoURL,
+          // ── StreamBuilder để real-time listen avatar từ Firestore ──
+          StreamBuilder<DocumentSnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('users')
+                .doc(widget.user.uid)
+                .snapshots(),
+            builder: (context, snapshot) {
+              String? avatarUrl = widget.user.photoURL;
+              
+              if (snapshot.hasData && snapshot.data?.exists == true) {
+                final userData = snapshot.data!.data() as Map?;
+                avatarUrl = userData?['avatarUrl'] as String?;
+              }
+
+              return IconButton(
+                icon: avatarUrl != null && avatarUrl.isNotEmpty
+                    ? CircleAvatar(
+                        radius: 16,
+                        backgroundImage: NetworkImage(avatarUrl),
+                      )
+                    : const Icon(Icons.account_circle_outlined),
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ProfileScreen(
+                      userProfile: UserProfile(
+                        uid: widget.user.uid,
+                        displayName: widget.user.displayName,
+                        email: widget.user.email,
+                        avatarUrl: avatarUrl ?? widget.user.photoURL,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
+              );
+            },
           ),
         ],
       ),
