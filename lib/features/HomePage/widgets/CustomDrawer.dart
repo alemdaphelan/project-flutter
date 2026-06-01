@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:project_flutter/features/login-register/screens/login_screen.dart';
 import 'package:project_flutter/features/HomePage/screens/edit_profile_screen.dart';
+// KỸ SƯ IMPORT THÊM MÀN HÌNH SAVED POSTS VÀO ĐÂY:
+import 'package:project_flutter/features/HomePage/screens/SavedPostsScreen.dart';
 
 class CustomDrawer extends StatelessWidget {
   const CustomDrawer({super.key});
@@ -165,15 +167,22 @@ class CustomDrawer extends StatelessWidget {
             const Divider(height: 1, indent: 16, endIndent: 16),
             _buildSectionLabel('Khám phá'),
 
+            // ========================================================
+            // KỸ SƯ ĐÃ NỐI ỐNG ĐIỀU HƯỚNG BÀI VIẾT ĐÃ LƯU
+            // ========================================================
             _buildDrawerItem(
               icon: Icons.bookmark_border,
               title: 'Bài viết đã lưu',
               onTap: () {
-                Navigator.pop(context);
-                // TODO: điều hướng đến SavedPosts
+                Navigator.pop(context); // Tắt menu trái
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SavedPostsScreen()),
+                );
               },
             ),
 
+            // ========================================================
             _buildDrawerItem(
               icon: Icons.history,
               title: 'Lịch sử mua hàng',
