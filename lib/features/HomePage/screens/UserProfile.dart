@@ -5,8 +5,9 @@ import 'package:project_flutter/firestore_service.dart';
 import 'package:project_flutter/shared/models/user_profile.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // KỸ SƯ IMPORT THÊM ĐỂ LẤY CURRENT USER ID
 
-// KỸ SƯ IMPORT MÀN HÌNH ĐÁNH GIÁ VÀO ĐÂY:
+// KỸ SƯ IMPORT MÀN HÌNH ĐÁNH GIÁ VÀ MODEL ĐÁNH GIÁ VÀO ĐÂY:
 import 'package:project_flutter/features/Review/ReviewScreen.dart';
+import 'package:project_flutter/features/Review/ReviewModel.dart'; // Đã thêm import Model
 
 class ProfileScreen extends StatelessWidget {
   final UserProfile userProfile;
@@ -149,23 +150,71 @@ class ProfileScreen extends StatelessWidget {
                   userProfile.location ?? 'Vị trí không xác định',
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  'Tổng đánh giá: ${userProfile.totalReviews}',
-                  style: const TextStyle(fontSize: 14, color: Colors.black87),
+
+                // ==========================================
+                // 🟢 THAY ĐỔI Ở ĐÂY: Dùng FutureBuilder tính toán điểm số trực tiếp
+                // ==========================================
+                FutureBuilder<List<ReviewModel>>(
+                  future: _firestore.getReviewsForSeller(userProfile.uid),
+                  builder: (context, snapshot) {
+                    // Trạng thái đang tải dữ liệu
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Text(
+                        'Đang tải đánh giá...',
+                        style: TextStyle(fontSize: 14, color: Colors.grey),
+                      );
+                    }
+
+                    // Trạng thái lỗi hoặc không có data
+                    if (snapshot.hasError) {
+                      return const Text(
+                        'Lỗi tải đánh giá',
+                        style: TextStyle(fontSize: 14, color: Colors.red),
+                      );
+                    }
+
+                    // Lấy danh sách review ra để xử lý
+                    final reviews = snapshot.data ?? [];
+                    final int totalReviews = reviews.length;
+                    double averageRating = 0.0;
+
+                    // Tính trung bình cộng nếu có đánh giá
+                    if (totalReviews > 0) {
+                      double sum = 0.0;
+                      for (var review in reviews) {
+                        sum += review.rating;
+                      }
+                      averageRating = sum / totalReviews;
+                    }
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Tổng đánh giá: $totalReviews',
+                          style: const TextStyle(
+                              fontSize: 14, color: Colors.black87),
+                        ),
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            Text(
+                              // toStringAsFixed(1) để hiển thị 1 chữ số thập phân, vd: 4.5
+                              'Đánh giá trung bình: ${averageRating.toStringAsFixed(1)} ',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            const Icon(Icons.star,
+                                size: 16, color: Colors.black),
+                          ],
+                        ),
+                      ],
+                    );
+                  },
                 ),
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    Text(
-                      'Đánh giá trung bình: ${userProfile.averageRating} ',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const Icon(Icons.star, size: 16, color: Colors.black),
-                  ],
-                ),
+                // ==========================================
               ],
             ),
           ),
@@ -213,8 +262,7 @@ class ProfileScreen extends StatelessWidget {
                 context,
                 MaterialPageRoute(
                   builder: (_) => SellerReviewsScreen(
-                    sellerId: userProfile
-                        .uid, // Mở kho review của chính chủ profile này
+                    sellerId: userProfile.uid, // Mở kho review của chính chủ profile này
                     currentUserId: currentUid, // ID thằng đang đi xem
                   ),
                 ),
