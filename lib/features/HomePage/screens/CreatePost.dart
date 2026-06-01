@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:project_flutter/firestore_service.dart';
 import 'package:project_flutter/features/HomePage/Models/Product.dart';
+import 'package:project_flutter/cloudinary_service.dart';
 
 class CreatePostScreen extends StatefulWidget {
   final String userId;
@@ -141,38 +142,55 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     });
 
     try {
-      String localImagePath = await _firestoreService.saveImageToLocalStorage(
+      // ========================================================
+      // 1. KỸ SƯ BẮN ẢNH LÊN CLOUDINARY TRƯỚC
+      // ========================================================
+      String? cloudinaryUrl = await CloudinaryService().uploadImage(
         _pickedImage!,
+        type: ImageUploadType.product, // Khai báo rõ đây là ảnh sản phẩm
       );
 
-      // Gom toàn bộ data thông số động
+      // Nếu rớt mạng hoặc lỗi API -> Chặn luôn không cho đăng bài
+      if (cloudinaryUrl == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('❌ Lỗi tải ảnh lên mạng. Vui lòng thử lại!'),
+            ),
+          );
+          setState(() => _isLoading = false);
+        }
+        return;
+      }
+      // ========================================================
+
+      // 2. Gom toàn bộ data thông số động
       Map<String, dynamic> specificationsMap = {};
       _dynamicControllers.forEach((fieldName, controller) {
         specificationsMap[fieldName] = controller.text.trim();
       });
 
+      // 3. Khởi tạo cục Data
       ProductModel newProduct = ProductModel(
         id: '',
         sellerId: widget.userId,
-        sellerName: '',
+        sellerName: widget.userName, // Sửa lại chỗ này luôn, nãy mày để rỗng ''
         time: '',
-        productImageUrl: localImagePath,
+        productImageUrl: cloudinaryUrl, // 🔴 CẮM ĐƯỜNG LINK HTTPS XỊN VÀO ĐÂY
         productName: _nameController.text.trim(),
         price: double.parse(_priceController.text.trim()),
-        specifications:
-            specificationsMap, // Cục map động chui vào fields trên Firebase
+        specifications: specificationsMap,
         description: _descriptionController.text.trim(),
         location: _locationController.text.trim(),
         category: _selectedCategory ?? 'Other',
       );
 
+      // 4. Bắn vào Database
       await _firestoreService.addProduct(newProduct.toMap());
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('🎉 Đăng bán sản phẩm real-time thành công!'),
-          ),
+          const SnackBar(content: Text('🎉 Đăng bán sản phẩm thành công!')),
         );
         Navigator.pop(context);
       }

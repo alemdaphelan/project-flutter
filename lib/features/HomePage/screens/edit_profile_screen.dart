@@ -10,6 +10,7 @@ import 'package:project_flutter/features/payment/services/bank_account_service.d
 import 'package:project_flutter/features/payment/widgets/bank_account_card.dart';
 import 'package:project_flutter/features/payment/widgets/searchable_address_dropdown.dart';
 import 'package:flutter/services.dart';
+import 'package:project_flutter/cloudinary_service.dart';
 
 enum EditProfileTab { basicInfo, bankAccount }
 
@@ -290,27 +291,13 @@ class _BasicInfoTabState extends State<_BasicInfoTab> {
     });
   }
 
-  // ── Upload avatar lên Cloudinary ──
   Future<String?> _uploadAvatarToCloudinary(File file) async {
-    const cloudName = 'db9hzryrx';
-    const preset = 'selling_app_avatar';
-    final uri = Uri.parse(
-      'https://api.cloudinary.com/v1_1/$cloudName/image/upload',
+    return await CloudinaryService().uploadImage(
+      file,
+      type: ImageUploadType.avatar,
     );
-
-    final request = http.MultipartRequest('POST', uri)
-      ..fields['upload_preset'] = preset
-      ..files.add(await http.MultipartFile.fromPath('file', file.path));
-
-    final response = await request.send();
-    if (response.statusCode == 200) {
-      final body = json.decode(await response.stream.bytesToString());
-      return body['secure_url'] as String?;
-    }
-    return null;
   }
 
-  // ── Lưu toàn bộ thông tin ──
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     final uid = FirebaseAuth.instance.currentUser?.uid;
