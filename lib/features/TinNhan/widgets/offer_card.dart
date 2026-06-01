@@ -67,10 +67,36 @@ class OfferCard extends StatelessWidget {
                               ),
                             ],
                           )
-                    else 
-                      Text(
-                        offer.status == 'accepted' ? "ĐÃ CHẤP NHẬN" : "ĐÃ TỪ CHỐI",
-                        style: TextStyle(fontWeight: FontWeight.bold, color: offer.status == 'accepted' ? Colors.green : Colors.red),
+                    else if (offer.status == 'accepted')
+                      Column(
+                        children: [
+                          const Text(
+                            "ĐÃ CHẤP NHẬN",
+                            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
+                          ),
+                          if (isMe) ...[
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton.icon(
+                                onPressed: onPay,
+                                icon: const Icon(Icons.payment, size: 18),
+                                label: const Text("Thanh toán ngay", style: TextStyle(fontWeight: FontWeight.bold)),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.green,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                              ),
+                            ),
+                          ]
+                        ],
+                      )
+                    else
+                      const Text(
+                        "ĐÃ TỪ CHỐI",
+                        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
                       ),
                   ],
                 ),

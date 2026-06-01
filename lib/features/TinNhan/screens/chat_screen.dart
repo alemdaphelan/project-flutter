@@ -295,6 +295,7 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 }*/
+
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -313,6 +314,10 @@ import '../services/chat_extension_service.dart';
 import 'package:project_flutter/firestore_service.dart';
 import 'package:project_flutter/features/Notification/NotificationModel.dart';
 // ========================================================
+
+// KỸ SƯ IMPORT CHECKOUT SCREEN VÀ PRODUCT MODEL:
+import 'package:project_flutter/features/payment/screens/checkout_screen.dart';
+import 'package:project_flutter/features/HomePage/Models/Product.dart';
 
 class ChatScreen extends StatefulWidget {
   final String chatRoomId;
@@ -349,6 +354,7 @@ class _ChatScreenState extends State<ChatScreen> {
   String myUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
   String? partnerId;
   bool amISeller = false;
+  String? productId; // Lưu tạm tên/id sản phẩm để truy vấn lúc thanh toán
 
   @override
   void initState() {
@@ -378,6 +384,7 @@ class _ChatScreenState extends State<ChatScreen> {
           partnerId = data['buyerId'];
           amISeller = true;
         }
+        productId = data['productName'];
       });
     }
   }
@@ -555,7 +562,47 @@ class _ChatScreenState extends State<ChatScreen> {
                             existingImageUrl: m.offer!.productImageUrl,
                           );
                         },
-                        onPay: () {},
+                        onPay: () async {
+                           // Hiển thị vòng xoay tải dữ liệu
+                           showDialog(
+                             context: context,
+                             barrierDismissible: false,
+                             builder: (c) => const Center(child: CircularProgressIndicator()),
+                           );
+                           
+                           try {
+                             QuerySnapshot productSnap = await FirebaseFirestore.instance
+                               .collection('listings')
+                               .where('name', isEqualTo: productId) 
+                               .limit(1)
+                               .get();
+
+                             if (context.mounted) Navigator.pop(context); 
+
+                             if (productSnap.docs.isNotEmpty) {
+                               var doc = productSnap.docs.first;
+                               ProductModel product = ProductModel.fromFirestore(
+                                 doc.data() as Map<String, dynamic>,
+                                 doc.id,
+                               );
+                               
+                               if (context.mounted) {
+                                 Navigator.push(
+                                   context,
+                                   MaterialPageRoute(
+                                     builder: (_) => CheckoutScreen(product: product, dealPrice: m.offer!.price),
+                                   ),
+                                 );
+                               }
+                             } else {
+                               if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sản phẩm không còn tồn tại!')));
+                               }
+                             }
+                           } catch (e) {
+                             if (context.mounted) Navigator.pop(context);
+                           }
+                        },
                       );
                     }
                     return ChatBubble(message: m, isMe: isMe);

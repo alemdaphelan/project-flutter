@@ -10,10 +10,10 @@ import 'payment_method_screen.dart';
 import 'package:project_flutter/features/payment/widgets/searchable_address_dropdown.dart';
 
 class CheckoutScreen extends StatefulWidget {
-  /// Nhận ProductModel từ DetailListing thay vì hardcode
   final ProductModel product;
+  final double? dealPrice; // <- Bổ sung biến để nhận giá offer nếu có
 
-  const CheckoutScreen({super.key, required this.product});
+  const CheckoutScreen({super.key, required this.product, this.dealPrice});
 
   @override
   State<CheckoutScreen> createState() => _CheckoutScreenState();
@@ -23,12 +23,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final _formKey = GlobalKey<FormState>();
   final Color primaryTeal = const Color(0xFF1B6B60);
 
-  // Controllers form
   final _nameCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
   final _streetCtrl = TextEditingController();
 
-  // Dữ liệu địa chỉ
   List<dynamic> _allProvinces = [];
   List<dynamic> _allWards = [];
   List<dynamic> _displayWards = [];
@@ -40,7 +38,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   String selectedMethod = 'COD';
   bool _isLoading = true;
   bool _isSubmitting = false;
-  bool _submitLock = false; // chặn double-tap trước khi setState kịp rebuild
+  bool _submitLock = false; 
 
   @override
   void initState() {
@@ -79,6 +77,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     return null;
   }
 
+  InputBorder _inputBorder({Color color = Colors.grey, double width = 1}) {
+      return OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: color, width: width),
+      );
+  }
+
   InputDecoration _inputStyle(String label, {IconData? icon}) {
     return InputDecoration(
       labelText: label,
@@ -86,27 +91,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       filled: true,
       fillColor: Colors.grey.shade50,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.shade300),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: primaryTeal, width: 2),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.red),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.red, width: 2),
-      ),
+      enabledBorder: _inputBorder(color: Colors.grey.shade300),
+      focusedBorder: _inputBorder(color: primaryTeal, width: 2),
+      errorBorder: _inputBorder(color: Colors.red),
+      focusedErrorBorder: _inputBorder(color: Colors.red, width: 2),
     );
   }
 
   Future<void> _submit() async {
-    // Chặn double-tap: lock ngay lập tức, không đợi setState rebuild
     if (_submitLock) return;
     _submitLock = true;
 
@@ -133,19 +125,20 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     try {
       final uid = FirebaseAuth.instance.currentUser!.uid;
 
-      // Ghép địa chỉ đầy đủ
       final fullAddress =
           '${_streetCtrl.text.trim()}, $selectedWardName, $selectedProvinceName';
 
-      // Tạo đơn hàng trên Firestore
+      // Ưu tiên lấy giá deal nếu có, không có thì lấy giá gốc
+      double finalPrice = widget.dealPrice ?? widget.product.price;
+
       final order = OrderModel(
         id: '',
         buyerId: uid,
         sellerId: widget.product.sellerId,
-        productId: widget.product.id, // ← dùng ID thật để update status sau này
+        productId: widget.product.id, 
         productName: widget.product.productName,
         productImageUrl: widget.product.productImageUrl,
-        price: widget.product.price,
+        price: finalPrice, // Chốt giá cuối cùng
         receiverName: _nameCtrl.text.trim(),
         receiverPhone: _phoneCtrl.text.trim(),
         deliveryAddress: fullAddress,
@@ -162,7 +155,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         MaterialPageRoute(
           builder: (_) => PaymentMethodScreen(
             method: selectedMethod,
-            amount: widget.product.price.toInt(),
+            amount: finalPrice.toInt(), // Cập nhật số tiền qua cổng thanh toán
             orderId: orderId,
             sellerId: widget.product.sellerId,
             isBuyer: true,
@@ -186,6 +179,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Ưu tiên hiển thị giá deal
+    double displayPrice = widget.dealPrice ?? widget.product.price;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -216,10 +212,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // ── Thông tin sản phẩm lấy từ ProductModel ──
                     PaymentItemTile(
                       name: widget.product.productName,
-                      price: widget.product.price,
+                      price: displayPrice, // Giá hiển thị trên banner sản phẩm
                       imageUrl: widget.product.productImageUrl,
                     ),
                     const SizedBox(height: 24),
@@ -255,7 +250,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             color: Colors.grey.shade700)),
                     const SizedBox(height: 12),
 
-                    // Dropdown Tỉnh — có tìm kiếm
                     SearchableAddressDropdown(
                       label: 'Tỉnh / Thành phố',
                       icon: Icons.location_city_outlined,
@@ -280,7 +274,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     ),
                     const SizedBox(height: 12),
 
-                    // Dropdown Phường — có tìm kiếm
                     SearchableAddressDropdown(
                       label: 'Phường / Xã / Thị trấn',
                       icon: Icons.holiday_village_outlined,
@@ -322,7 +315,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     _buildPaymentOption(
                         'Bank', 'Chuyển khoản ngân hàng (VietQR)'),
 
-                    // Tóm tắt giá
                     const SizedBox(height: 24),
                     Container(
                       padding: const EdgeInsets.all(16),
@@ -338,7 +330,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                   fontWeight: FontWeight.w600,
                                   fontSize: 15)),
                           Text(
-                            '${widget.product.price.toStringAsFixed(0)} VNĐ',
+                            '${displayPrice.toStringAsFixed(0)} VNĐ', // Cập nhật tổng tiền hiển thị
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
