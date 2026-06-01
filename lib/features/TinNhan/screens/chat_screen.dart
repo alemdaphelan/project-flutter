@@ -10,14 +10,8 @@ import '../widgets/chat_bubble.dart';
 import '../widgets/offer_card.dart';
 import '../widgets/chat_input.dart';
 import '../services/chat_extension_service.dart';
-
-// ========================================================
-// KỸ SƯ IMPORT DỊCH VỤ VÀ MODEL THÔNG BÁO VÀO ĐÂY:
 import 'package:project_flutter/firestore_service.dart';
 import 'package:project_flutter/features/Notification/NotificationModel.dart';
-// ========================================================
-
-// KỸ SƯ IMPORT CHECKOUT SCREEN VÀ PRODUCT MODEL:
 import 'package:project_flutter/features/payment/screens/checkout_screen.dart';
 import 'package:project_flutter/features/HomePage/Models/Product.dart';
 
@@ -47,16 +41,13 @@ class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _pController = TextEditingController();
   final TextEditingController _msgController = TextEditingController();
   final FirebaseChatService _chatService = FirebaseChatService();
-
-  // KỸ SƯ KHỞI TẠO DỊCH VỤ BẮN THÔNG BÁO
   final FirestoreService _firestoreService = FirestoreService();
 
   File? _offerImage;
-
   String myUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
   String? partnerId;
   bool amISeller = false;
-  String? productId; // Lưu tạm tên/id sản phẩm để truy vấn lúc thanh toán
+  String? productId;
 
   @override
   void initState() {
@@ -114,8 +105,9 @@ class _ChatScreenState extends State<ChatScreen> {
                   final f = await ImagePicker().pickImage(
                     source: ImageSource.gallery,
                   );
-                  if (f != null)
+                  if (f != null) {
                     setDialogState(() => _offerImage = File(f.path));
+                  }
                 },
                 child: Container(
                   height: 120,
@@ -131,15 +123,20 @@ class _ChatScreenState extends State<ChatScreen> {
                           child: Image.file(_offerImage!, fit: BoxFit.cover),
                         )
                       : (existingImageUrl != null &&
-                            existingImageUrl.isNotEmpty)
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: Image.network(
-                            existingImageUrl,
-                            fit: BoxFit.cover,
-                          ),
-                        )
-                      : const Icon(Icons.add_a_photo, color: Colors.grey),
+                              existingImageUrl.isNotEmpty)
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: existingImageUrl.startsWith('http')
+                                  ? Image.network(
+                                      existingImageUrl,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : Image.file(
+                                      File(existingImageUrl.replaceFirst('file://', '')),
+                                      fit: BoxFit.cover,
+                                    ),
+                            )
+                          : const Icon(Icons.add_a_photo, color: Colors.grey),
                 ),
               ),
               const SizedBox(height: 15),
@@ -191,7 +188,6 @@ class _ChatScreenState extends State<ChatScreen> {
                     relatedId: widget.chatRoomId,
                   );
                 }
-                // ========================================================
 
                 _pController.clear();
                 if (context.mounted) Navigator.pop(c);
@@ -232,8 +228,9 @@ class _ChatScreenState extends State<ChatScreen> {
             child: StreamBuilder<List<Message>>(
               stream: _chatService.getMessagesStream(widget.chatRoomId),
               builder: (context, snapshot) {
-                if (!snapshot.hasData)
+                if (!snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
+                }
 
                 final msgs = snapshot.data ?? [];
                 return ListView.builder(
@@ -248,10 +245,6 @@ class _ChatScreenState extends State<ChatScreen> {
                         message: m,
                         isMe: isMe,
                         isSeller: amISeller,
-
-                        // ========================================================
-                        // KỸ SƯ CÀI MÌN BẮN THÔNG BÁO KHI BẤM "ĐỒNG Ý"
-                        // ========================================================
                         onAccept: () async {
                           await _chatService.updateOfferStatus(
                             widget.chatRoomId,
@@ -268,10 +261,6 @@ class _ChatScreenState extends State<ChatScreen> {
                             );
                           }
                         },
-
-                        // ========================================================
-                        // KỸ SƯ CÀI MÌN BẮN THÔNG BÁO KHI BẤM "TỪ CHỐI"
-                        // ========================================================
                         onReject: () async {
                           await _chatService.updateOfferStatus(
                             widget.chatRoomId,
@@ -288,7 +277,6 @@ class _ChatScreenState extends State<ChatScreen> {
                             );
                           }
                         },
-
                         onEdit: () {
                           _pController.text = m.offer!.price.toInt().toString();
                           _showOfferDialog(
@@ -296,7 +284,6 @@ class _ChatScreenState extends State<ChatScreen> {
                           );
                         },
                         onPay: () async {
-                          // Hiển thị vòng xoay tải dữ liệu
                           showDialog(
                             context: context,
                             barrierDismissible: false,
@@ -377,13 +364,11 @@ class _ChatScreenState extends State<ChatScreen> {
                 await _firestoreService.triggerNotification(
                   receiverId: partnerId!,
                   title: 'Tin nhắn mới 💬',
-                  body:
-                      textToSend, // Trích xuất đúng câu chat gán vào nội dung báo
+                  body: textToSend,
                   type: NotificationType.chat,
                   relatedId: widget.chatRoomId,
                 );
               }
-              // ========================================================
 
               if (ChatExtensionService.isAutoReplyEnabled &&
                   partnerId != null) {
@@ -439,7 +424,6 @@ class _ChatScreenState extends State<ChatScreen> {
                     relatedId: widget.chatRoomId,
                   );
                 }
-                // ========================================================
 
                 if (ChatExtensionService.isAutoReplyEnabled &&
                     partnerId != null) {

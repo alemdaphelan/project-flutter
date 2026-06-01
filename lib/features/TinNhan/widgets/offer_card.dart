@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/message.dart';
 
@@ -32,7 +33,9 @@ class OfferCard extends StatelessWidget {
               if (offer.productImageUrl != null && offer.productImageUrl!.isNotEmpty)
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
-                  child: Image.network(offer.productImageUrl!, height: 120, width: double.infinity, fit: BoxFit.cover),
+                  child: offer.productImageUrl!.startsWith('http')
+                      ? Image.network(offer.productImageUrl!, height: 120, width: double.infinity, fit: BoxFit.cover)
+                      : Image.file(File(offer.productImageUrl!.replaceFirst('file://', '')), height: 120, width: double.infinity, fit: BoxFit.cover),
                 ),
               Padding(
                 padding: const EdgeInsets.all(15),

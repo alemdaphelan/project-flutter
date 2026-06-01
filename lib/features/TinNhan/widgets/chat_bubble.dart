@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/message.dart';
 
@@ -22,7 +23,9 @@ class ChatBubble extends StatelessWidget {
             ? Text(message.content, style: TextStyle(color: isMe ? Colors.white : Colors.black))
             : ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: Image.network(message.content, width: 220, fit: BoxFit.cover),
+                child: message.content.startsWith('http')
+                    ? Image.network(message.content, width: 220, fit: BoxFit.cover)
+                    : Image.file(File(message.content.replaceFirst('file://', '')), width: 220, fit: BoxFit.cover),
               ),
       ),
     );
