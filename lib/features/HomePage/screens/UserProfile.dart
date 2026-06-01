@@ -6,6 +6,7 @@ import 'package:project_flutter/shared/models/user_profile.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:project_flutter/features/Review/ReviewScreen.dart';
 import 'package:project_flutter/features/Review/ReviewModel.dart'; // Đã thêm import Model
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ProfileScreen extends StatelessWidget {
   final UserProfile userProfile;
@@ -77,135 +78,163 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
+  // ── KỸ SƯ GẮN STREAMBUILDER ĐỂ ÉP PROFILE LUÔN LẤY DATA MỚI NHẤT TỪ FIREBASE ──
   Widget _buildProfileHeader() {
-    final hasValidAvatar = userProfile.avatarUrl?.isNotEmpty ?? false;
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(userProfile.uid)
+          .snapshots(),
+      builder: (context, snapshot) {
+        // 1. Khởi tạo data dự phòng (lấy từ biến tĩnh mày truyền vào)
+        String displayName = userProfile.displayName ?? 'Tên người dùng';
+        String email = userProfile.email ?? 'Email không xác định';
+        String location = userProfile.location ?? 'Chưa cập nhật địa chỉ';
+        String avatar = userProfile.avatarUrl ?? '';
 
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(3),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: primaryTeal, width: 2),
-            ),
-            child: ClipOval(
-              child: Container(
-                width: 80,
-                height: 80,
-                color: Colors.grey.shade300,
-                child: hasValidAvatar
-                    ? CachedNetworkImage(
-                        imageUrl: userProfile.avatarUrl!,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => const Center(
-                          child: SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+        // 2. Nếu mây Firebase bơm data về -> Lấy data mây đè lên!
+        if (snapshot.hasData && snapshot.data!.exists) {
+          var data = snapshot.data!.data() as Map<String, dynamic>;
+          displayName =
+              data['displayName'] ?? displayName; // Lấy ALemm ở đây nè!
+          email = data['email'] ?? email;
+          location = data['location'] ?? location;
+          avatar = data['avatarUrl'] ?? avatar;
+        }
+
+        final hasValidAvatar = avatar.isNotEmpty;
+
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Avatar
+              Container(
+                padding: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: primaryTeal, width: 2),
+                ),
+                child: ClipOval(
+                  child: Container(
+                    width: 80,
+                    height: 80,
+                    color: Colors.grey.shade300,
+                    child: hasValidAvatar
+                        ? CachedNetworkImage(
+                            imageUrl: avatar,
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) => const Center(
+                              child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            ),
+                            errorWidget: (context, url, error) => const Icon(
+                              Icons.person,
+                              size: 40,
+                              color: Colors.grey,
+                            ),
+                          )
+                        : const Icon(
+                            Icons.person,
+                            size: 40,
+                            color: Colors.grey,
                           ),
-                        ),
-                        errorWidget: (context, url, error) => const Icon(
-                          Icons.person,
-                          size: 40,
-                          color: Colors.grey,
-                        ),
-                      )
-                    : const Icon(Icons.person, size: 40, color: Colors.grey),
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  userProfile.displayName ?? 'Tên người dùng',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 4),
-                _buildInfoRow(
-                  Icons.email_outlined,
-                  userProfile.email ?? 'Email không xác định',
-                ),
-                const SizedBox(height: 4),
-                FutureBuilder<List<ReviewModel>>(
-                  future: _firestore.getReviewsForSeller(userProfile.uid),
-                  builder: (context, snapshot) {
-                    // Trạng thái đang tải dữ liệu
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Text(
-                        'Đang tải đánh giá...',
-                        style: TextStyle(fontSize: 14, color: Colors.grey),
-                      );
-                    }
+              ),
+              const SizedBox(width: 16),
+              // Thông tin
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      displayName, // Sẽ tự động hiện "ALemm"
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    _buildInfoRow(Icons.email_outlined, email),
 
-                    // Trạng thái lỗi hoặc không có data
-                    if (snapshot.hasError) {
-                      return const Text(
-                        'Lỗi tải đánh giá',
-                        style: TextStyle(fontSize: 14, color: Colors.red),
-                      );
-                    }
+                    // ==========================================
+                    // Khu vực Đánh giá
+                    // ==========================================
+                    const SizedBox(height: 4),
+                    FutureBuilder<List<ReviewModel>>(
+                      future: _firestore.getReviewsForSeller(userProfile.uid),
+                      builder: (context, reviewSnapshot) {
+                        if (reviewSnapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Text(
+                            'Đang tải đánh giá...',
+                            style: TextStyle(fontSize: 14, color: Colors.grey),
+                          );
+                        }
+                        if (reviewSnapshot.hasError) {
+                          return const Text(
+                            'Lỗi tải đánh giá',
+                            style: TextStyle(fontSize: 14, color: Colors.red),
+                          );
+                        }
 
-                    // Lấy danh sách review ra để xử lý
-                    final reviews = snapshot.data ?? [];
-                    final int totalReviews = reviews.length;
-                    double averageRating = 0.0;
+                        final reviews = reviewSnapshot.data ?? [];
+                        final int totalReviews = reviews.length;
+                        double averageRating = 0.0;
 
-                    // Tính trung bình cộng nếu có đánh giá
-                    if (totalReviews > 0) {
-                      double sum = 0.0;
-                      for (var review in reviews) {
-                        sum += review.rating;
-                      }
-                      averageRating = sum / totalReviews;
-                    }
+                        if (totalReviews > 0) {
+                          double sum = 0.0;
+                          for (var review in reviews) {
+                            sum += review.rating;
+                          }
+                          averageRating = sum / totalReviews;
+                        }
 
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Tổng đánh giá: $totalReviews',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Row(
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              // toStringAsFixed(1) để hiển thị 1 chữ số thập phân, vd: 4.5
-                              'Đánh giá trung bình: ${averageRating.toStringAsFixed(1)} ',
+                              'Tổng đánh giá: $totalReviews',
                               style: const TextStyle(
                                 fontSize: 14,
                                 color: Colors.black87,
                               ),
                             ),
-                            const Icon(
-                              Icons.star,
-                              size: 16,
-                              color: Colors.black,
+                            const SizedBox(height: 2),
+                            Row(
+                              children: [
+                                Text(
+                                  'Đánh giá trung bình: ${averageRating.toStringAsFixed(1)} ',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                                const Icon(
+                                  Icons.star,
+                                  size: 16,
+                                  color: Colors.black,
+                                ),
+                              ],
                             ),
                           ],
-                        ),
-                      ],
-                    );
-                  },
+                        );
+                      },
+                    ),
+                  ],
                 ),
-                // ==========================================
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
