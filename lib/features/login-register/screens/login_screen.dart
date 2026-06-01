@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 import 'register_screen.dart';
 import 'otp_screen.dart';
 import 'profile_setup_screen.dart';
+import 'email_verification_screen.dart';
 import 'package:project_flutter/features/HomePage/screens/MainScreen.dart';
-import 'package:project_flutter/features/HomePage/screens/UserProfile.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -22,7 +23,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _obscurePassword = true;
   bool _isLoading = false;
-  bool _isEmailMode = true; // true = Email, false = Số điện thoại
+  bool _isEmailMode = true;
 
   @override
   void dispose() {
@@ -33,29 +34,56 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // ====================== VALIDATE ======================
 
-  String? _validateIdentifier(String value) {
-    if (value.trim().isEmpty) {
-      return _isEmailMode
-          ? 'Vui lòng nhập email'
-          : 'Vui lòng nhập số điện thoại';
+  String? _validateEmail(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return 'Vui lòng nhập email';
+
+    final emailRegex = RegExp(
+      r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$',
+    );
+    if (!emailRegex.hasMatch(trimmed)) {
+      return 'Email không đúng định dạng (ví dụ: abc@gmail.com)';
     }
-    if (_isEmailMode) {
-      final emailRegex = RegExp(r'^[\w\.\-]+@[\w\-]+\.[a-z]{2,}$');
-      if (!emailRegex.hasMatch(value.trim())) {
-        return 'Email không đúng định dạng (ví dụ: abc@gmail.com)';
-      }
-    } else {
-      final phoneRegex = RegExp(r'^(0[3-9][0-9]{8})$');
-      if (!phoneRegex.hasMatch(value.trim())) {
-        return 'Số điện thoại phải có đúng 10 số và bắt đầu bằng 0';
-      }
+
+    if (trimmed.contains('..') || trimmed.startsWith('.') || trimmed.endsWith('.')) {
+      return 'Email không hợp lệ';
     }
+
+    final parts = trimmed.split('@');
+    if (parts.length != 2) return 'Email không hợp lệ';
+    final domain = parts[1];
+    if (!domain.contains('.')) return 'Domain email không hợp lệ';
+
     return null;
+  }
+
+  /// Validate số điện thoại — bắt buộc đúng 10 số, chỉ chữ số
+  String? _validatePhone(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return 'Vui lòng nhập số điện thoại';
+
+    if (!RegExp(r'^\d+$').hasMatch(trimmed)) {
+      return 'Số điện thoại chỉ được chứa chữ số (0-9)';
+    }
+
+    if (trimmed.length != 10) {
+      return 'Số điện thoại phải có đúng 10 số (bạn nhập ${trimmed.length} số)';
+    }
+
+    final phoneRegex = RegExp(r'^(0[3-9][0-9]{8})$');
+    if (!phoneRegex.hasMatch(trimmed)) {
+      return 'Số điện thoại không hợp lệ.\nPhải bắt đầu bằng 03x, 05x, 07x, 08x hoặc 09x';
+    }
+
+    return null;
+  }
+
+  String? _validateIdentifier(String value) {
+    return _isEmailMode ? _validateEmail(value) : _validatePhone(value);
   }
 
   // ====================== ĐIỀU HƯỚNG SAU LOGIN ======================
 
-  /// Kiểm tra profile và điều hướng phù hợp
   Future<void> _navigateAfterLogin(User user) async {
     final hasProfile = await _authService.hasCompletedProfile(user.uid);
     if (!mounted) return;
@@ -69,13 +97,12 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // ====================== ĐĂNG NHẬP EMAIL/PHONE ======================
+  // ====================== ĐĂNG NHẬP EMAIL ======================
 
   Future<void> _handleLogin() async {
     final identifier = _identifierController.text.trim();
     final password = _passwordController.text;
 
-    // Validate
     final identifierError = _validateIdentifier(identifier);
     if (identifierError != null) {
       _showSnackBar(identifierError);
@@ -92,25 +119,57 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoading = true);
     try {
-      User? user;
-      if (_isEmailMode) {
-        user = await _authService.signInWithEmail(identifier, password);
-      } else {
-        // Đăng nhập bằng số điện thoại dùng Phone Auth
-        // Chuyển sang màn hình OTP để xác minh
-        _showSnackBar('Đăng nhập bằng số điện thoại yêu cầu xác minh OTP');
-        setState(() => _isLoading = false);
-        return;
-      }
-
-      if (user != null) {
+      final user = await _authService.signInWithEmail(identifier, password);
+      if (user != null && mounted) {
         await _navigateAfterLogin(user);
       }
     } catch (e) {
-      _showSnackBar(e.toString().replaceAll('Exception: ', ''));
+      final msg = e.toString().replaceAll('Exception: ', '');
+
+      // Nếu lỗi là chưa xác minh email → đưa về màn xác minh
+      if (msg.contains('chưa được xác minh') || msg.contains('xác minh')) {
+        if (mounted) {
+          _showSnackBar(msg);
+          // Sau 1 giây đẩy sang màn chờ verify
+          await Future.delayed(const Duration(seconds: 1));
+          if (mounted) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) =>
+                    EmailVerificationScreen(email: identifier),
+              ),
+            );
+          }
+        }
+      } else {
+        _showSnackBar(msg);
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  // ====================== ĐĂNG NHẬP BẰNG SĐT ======================
+
+  Future<void> _handlePhoneLogin() async {
+    final phone = _identifierController.text.trim();
+    final phoneError = _validatePhone(phone);
+    if (phoneError != null) {
+      _showSnackBar(phoneError);
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => OTPScreen(
+          identifier: phone,
+          isPhone: true,
+          isPasswordReset: false,
+        ),
+      ),
+    );
   }
 
   // ====================== QUÊN MẬT KHẨU ======================
@@ -133,8 +192,6 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    final bool isPhone = !_isEmailMode;
-
     if (!mounted) return;
 
     showDialog(
@@ -142,7 +199,7 @@ class _LoginScreenState extends State<LoginScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Xác nhận'),
         content: Text(
-          isPhone
+          !_isEmailMode
               ? 'Gửi mã OTP đến số điện thoại:\n$identifier'
               : 'Gửi link đặt lại mật khẩu đến email:\n$identifier',
         ),
@@ -159,7 +216,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 MaterialPageRoute(
                   builder: (_) => OTPScreen(
                     identifier: identifier,
-                    isPhone: isPhone,
+                    isPhone: !_isEmailMode,
                     isPasswordReset: true,
                   ),
                 ),
@@ -199,7 +256,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   user = await _authService.signInWithFacebook();
                 }
 
-                // null = user tự hủy → không làm gì
                 if (user != null && mounted) {
                   await _navigateAfterLogin(user);
                 }
@@ -336,22 +392,37 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(height: 20),
 
             // Input Email hoặc SĐT
-            TextField(
-              controller: _identifierController,
-              keyboardType: _isEmailMode
-                  ? TextInputType.emailAddress
-                  : TextInputType.phone,
-              maxLength: _isEmailMode ? null : 10,
-              decoration: InputDecoration(
-                labelText: _isEmailMode ? 'Email' : 'Số điện thoại (10 số)',
-                prefixIcon: Icon(
-                  _isEmailMode ? Icons.email_outlined : Icons.phone_outlined,
+            if (_isEmailMode)
+              TextField(
+                controller: _identifierController,
+                keyboardType: TextInputType.emailAddress,
+                autocorrect: false,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  prefixIcon: Icon(Icons.email_outlined),
+                  border: OutlineInputBorder(),
+                  hintText: 'example@gmail.com',
                 ),
-                border: const OutlineInputBorder(),
-                counterText: _isEmailMode ? null : '',
-                hintText: _isEmailMode ? 'example@gmail.com' : '0912345678',
+              )
+            else
+              TextField(
+                controller: _identifierController,
+                keyboardType: TextInputType.phone,
+                maxLength: 10,
+                // Chặn hoàn toàn ký tự không phải số
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(10),
+                ],
+                decoration: const InputDecoration(
+                  labelText: 'Số điện thoại (10 số)',
+                  prefixIcon: Icon(Icons.phone_outlined),
+                  border: OutlineInputBorder(),
+                  counterText: '',
+                  hintText: '0912345678',
+                  helperText: 'Đúng 10 chữ số, bắt đầu bằng 0',
+                ),
               ),
-            ),
 
             const SizedBox(height: 16),
 
@@ -384,7 +455,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ],
 
-            // Nếu đăng nhập bằng SĐT, giải thích flow
+            // Thông tin khi đăng nhập bằng SĐT
             if (!_isEmailMode) ...[
               const SizedBox(height: 8),
               Container(
@@ -412,7 +483,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
             const SizedBox(height: 8),
 
-            // Nút đăng nhập
             _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : ElevatedButton(
@@ -472,27 +542,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ],
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  /// Đăng nhập bằng số điện thoại — chuyển sang màn OTP
-  Future<void> _handlePhoneLogin() async {
-    final phone = _identifierController.text.trim();
-    final phoneRegex = RegExp(r'^(0[3-9][0-9]{8})$');
-    if (!phoneRegex.hasMatch(phone)) {
-      _showSnackBar('Số điện thoại phải có đúng 10 số và bắt đầu bằng 0');
-      return;
-    }
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => OTPScreen(
-          identifier: phone,
-          isPhone: true,
-          isPasswordReset: false, // Đây là đăng nhập, không phải reset
         ),
       ),
     );

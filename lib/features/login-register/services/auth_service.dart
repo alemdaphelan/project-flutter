@@ -12,13 +12,29 @@ class AuthService {
   // ====================== EMAIL/PASSWORD ======================
 
   /// Đăng nhập bằng email + password
+  /// Bắt buộc email phải được xác minh trước khi cho vào app
   Future<User?> signInWithEmail(String email, String password) async {
     try {
       final credential = await _auth.signInWithEmailAndPassword(
         email: email.trim(),
         password: password,
       );
-      return credential.user;
+      final user = credential.user;
+
+      // Kiểm tra email đã xác minh chưa
+      if (user != null && !user.emailVerified) {
+        // Gửi lại email xác minh
+        await user.sendEmailVerification();
+        // Đăng xuất ngay — không cho vào app khi chưa verify
+        await _auth.signOut();
+        throw Exception(
+          'Email chưa được xác minh.\n'
+          'Chúng tôi đã gửi lại email xác minh đến ${email.trim()}.\n'
+          'Vui lòng kiểm tra hộp thư (kể cả thư mục Spam) và nhấp vào link xác minh.',
+        );
+      }
+
+      return user;
     } on FirebaseAuthException catch (e) {
       switch (e.code) {
         case 'user-not-found':
@@ -30,6 +46,9 @@ class AuthService {
           throw Exception('Email không hợp lệ.');
         case 'user-disabled':
           throw Exception('Tài khoản này đã bị vô hiệu hóa.');
+        case 'too-many-requests':
+          throw Exception(
+              'Quá nhiều lần thử. Vui lòng đợi vài phút rồi thử lại.');
         default:
           throw Exception(e.message ?? 'Đăng nhập thất bại.');
       }
@@ -37,14 +56,21 @@ class AuthService {
   }
 
   /// Đăng ký bằng email + password
-  /// Không cần sync Firestore ở đây — ProfileSetupScreen sẽ tạo document
+  /// Sau khi tạo tài khoản sẽ gửi email xác minh ngay lập tức
   Future<User?> signUpWithEmail(String email, String password) async {
     try {
       final credential = await _auth.createUserWithEmailAndPassword(
         email: email.trim(),
         password: password,
       );
-      return credential.user;
+      final user = credential.user;
+
+      // Gửi email xác minh ngay sau khi tạo tài khoản
+      if (user != null) {
+        await user.sendEmailVerification();
+      }
+
+      return user;
     } on FirebaseAuthException catch (e) {
       switch (e.code) {
         case 'email-already-in-use':
@@ -61,6 +87,32 @@ class AuthService {
           throw Exception(e.message ?? 'Đăng ký thất bại.');
       }
     }
+  }
+
+  /// Gửi lại email xác minh cho user hiện tại
+  Future<void> resendVerificationEmail() async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('Chưa đăng nhập.');
+    if (user.emailVerified) throw Exception('Email đã được xác minh rồi.');
+    try {
+      await user.sendEmailVerification();
+    } on FirebaseAuthException catch (e) {
+      switch (e.code) {
+        case 'too-many-requests':
+          throw Exception(
+              'Đã gửi quá nhiều lần. Vui lòng đợi vài phút rồi thử lại.');
+        default:
+          throw Exception(e.message ?? 'Gửi email xác minh thất bại.');
+      }
+    }
+  }
+
+  /// Kiểm tra trạng thái xác minh email (reload user trước khi check)
+  Future<bool> checkEmailVerified() async {
+    final user = _auth.currentUser;
+    if (user == null) return false;
+    await user.reload(); // Cập nhật trạng thái mới nhất từ Firebase
+    return _auth.currentUser?.emailVerified ?? false;
   }
 
   // ====================== SOCIAL LOGIN ======================
@@ -80,7 +132,6 @@ class AuthService {
       final userCredential = await _auth.signInWithCredential(credential);
       final user = userCredential.user;
 
-      // Sync thông tin từ Google vào Firestore
       if (user != null) {
         await syncUserToFirestore(user);
       }
@@ -100,9 +151,7 @@ class AuthService {
         permissions: ['public_profile', 'email'],
       );
 
-      if (result.status == LoginStatus.cancelled) {
-        return null; // User tự hủy — không throw exception
-      }
+      if (result.status == LoginStatus.cancelled) return null;
 
       if (result.status != LoginStatus.success) {
         throw Exception('Đăng nhập Facebook thất bại: ${result.message}');
@@ -120,7 +169,6 @@ class AuthService {
       final userCredential = await _auth.signInWithCredential(credential);
       final user = userCredential.user;
 
-      // Sync thông tin từ Facebook vào Firestore
       if (user != null) {
         await syncUserToFirestore(user);
       }
@@ -139,19 +187,13 @@ class AuthService {
     }
   }
 
-  /// Đồng bộ thông tin từ Firebase Auth (Google/Facebook) vào Firestore.
-  /// - Lần đầu login: tạo document mới với đầy đủ thông tin từ provider
-  /// - Đã có document: chỉ fill những field đang rỗng, KHÔNG ghi đè
-  ///   dữ liệu user đã tự chỉnh sửa trong ProfileSetupScreen
+  /// Đồng bộ thông tin từ Firebase Auth vào Firestore
   Future<void> syncUserToFirestore(User user) async {
     try {
       final ref = _firestore.collection('users').doc(user.uid);
       final doc = await ref.get();
 
       if (!doc.exists) {
-        // Lần đầu đăng nhập Social → tạo document mới
-        // hasCompletedProfile = false → app sẽ đẩy vào ProfileSetupScreen
-        // để user bổ sung thêm thông tin (địa chỉ, bio, sở thích...)
         await ref.set({
           'displayName': user.displayName ?? '',
           'email': user.email ?? '',
@@ -166,7 +208,6 @@ class AuthService {
           'updatedAt': FieldValue.serverTimestamp(),
         });
       } else {
-        // Đã có document → chỉ cập nhật field đang rỗng/null
         final data = doc.data()!;
         final updates = <String, dynamic>{};
 
@@ -189,7 +230,6 @@ class AuthService {
         }
       }
     } catch (e) {
-      // Không throw — lỗi sync không được chặn luồng đăng nhập
       print('[syncUserToFirestore] Lỗi: $e');
     }
   }
@@ -211,14 +251,14 @@ class AuthService {
       forceResendingToken: _resendToken,
       timeout: const Duration(seconds: 60),
       verificationCompleted: (PhoneAuthCredential credential) async {
-        // Android tự động xác minh SMS (không cần nhập OTP thủ công)
         await _auth.signInWithCredential(credential);
       },
       verificationFailed: (FirebaseAuthException e) {
         String msg;
         switch (e.code) {
           case 'invalid-phone-number':
-            msg = 'Số điện thoại không hợp lệ. Vui lòng nhập đúng định dạng.';
+            msg =
+                'Số điện thoại không hợp lệ. Vui lòng nhập đúng định dạng 10 số.';
             break;
           case 'too-many-requests':
             msg = 'Quá nhiều yêu cầu OTP. Vui lòng thử lại sau ít phút.';
@@ -242,7 +282,7 @@ class AuthService {
     );
   }
 
-  /// Xác minh OTP và đăng nhập/liên kết tài khoản
+  /// Xác minh OTP và đăng nhập
   Future<User?> verifyPhoneOTP(String smsCode) async {
     if (_verificationId == null) {
       throw Exception('Chưa gửi OTP. Vui lòng yêu cầu gửi lại.');
@@ -268,9 +308,6 @@ class AuthService {
 
   // ====================== QUÊN MẬT KHẨU ======================
 
-  /// Gửi OTP để reset mật khẩu
-  /// - Nếu là số điện thoại: gửi SMS OTP thật qua Firebase
-  /// - Nếu là email: gửi link đặt lại mật khẩu thật qua Firebase
   Future<void> sendPasswordResetOTP({
     required String identifier,
     required bool isPhone,
@@ -303,23 +340,17 @@ class AuthService {
     }
   }
 
-  /// Xác minh OTP reset mật khẩu (chỉ dùng cho phone)
   Future<User?> verifyResetOTP(String smsCode) async {
     return await verifyPhoneOTP(smsCode);
   }
 
-  /// Format số điện thoại Việt Nam sang +84...
   String _formatVietnamPhone(String phone) {
     phone = phone.trim().replaceAll(' ', '').replaceAll('-', '');
     if (phone.startsWith('0') && phone.length == 10) {
       return '+84${phone.substring(1)}';
     }
-    if (phone.startsWith('+84')) {
-      return phone;
-    }
-    if (phone.startsWith('84') && phone.length == 11) {
-      return '+$phone';
-    }
+    if (phone.startsWith('+84')) return phone;
+    if (phone.startsWith('84') && phone.length == 11) return '+$phone';
     return phone;
   }
 
@@ -359,7 +390,6 @@ class AuthService {
 
   // ====================== USER PROFILE ======================
 
-  /// Kiểm tra user đã hoàn thành profile chưa
   Future<bool> hasCompletedProfile(String uid) async {
     try {
       final doc = await _firestore.collection('users').doc(uid).get();
@@ -369,15 +399,13 @@ class AuthService {
     }
   }
 
-  /// Lưu profile người dùng lên Firestore
   Future<void> saveUserProfile(String uid, UserProfile profile) async {
     await _firestore.collection('users').doc(uid).set(
-      profile.toMap(),
-      SetOptions(merge: true),
-    );
+          profile.toMap(),
+          SetOptions(merge: true),
+        );
   }
 
-  /// Lấy profile người dùng từ Firestore
   Future<UserProfile?> getUserProfile(String uid) async {
     try {
       final doc = await _firestore.collection('users').doc(uid).get();
