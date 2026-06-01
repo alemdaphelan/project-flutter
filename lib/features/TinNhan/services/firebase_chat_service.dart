@@ -35,15 +35,18 @@ class FirebaseChatService {
     String? productImageUrl,
   }) async {
     try {
+      // 1. TÌM PHÒNG CHAT CHUNG (Chỉ dựa vào 2 ID, không quan tâm sản phẩm gì)
       QuerySnapshot snapshot = await _firestore.collection('chats')
           .where('buyerId', isEqualTo: buyerId)
           .where('sellerId', isEqualTo: sellerId)
-          .where('productName', isEqualTo: productName)
           .limit(1)
           .get();
 
+      String chatRoomId;
+
+      // 2. NẾU ĐÃ TỪNG CHAT -> LẤY PHÒNG CŨ | NẾU CHƯA -> TẠO PHÒNG MỚI
       if (snapshot.docs.isNotEmpty) {
-        return snapshot.docs.first.id;
+        chatRoomId = snapshot.docs.first.id;
       } else {
         DocumentReference doc = await _firestore.collection('chats').add({
           'buyerId': buyerId,
@@ -53,9 +56,12 @@ class FirebaseChatService {
           'lastMessage': isOffer ? '[Đề xuất giá]: $productName' : '[Yêu cầu tư vấn]: $productName',
           'timestamp': FieldValue.serverTimestamp(),
         });
-        
-        if (isOffer && productPrice != null) {
-          await doc.collection('messages').add({
+        chatRoomId = doc.id;
+      }
+
+      // 3. LUÔN GỬI TIN NHẮN CHÀO HÀNG VÀO PHÒNG ĐÓ
+      if (isOffer && productPrice != null) {
+        await _firestore.collection('chats').doc(chatRoomId).collection('messages').add({
              'senderId': buyerId,
              'receiverId': sellerId,
              'content': 'Tôi muốn đề xuất giá cho: $productName',
@@ -66,19 +72,25 @@ class FirebaseChatService {
                'productImageUrl': productImageUrl,
                'status': 'pending'
              }
-          });
-        } else {
-          await doc.collection('messages').add({
+        });
+      } else {
+        await _firestore.collection('chats').doc(chatRoomId).collection('messages').add({
              'senderId': buyerId,
              'receiverId': sellerId,
              'content': 'Tôi muốn hỏi mua: $productName',
              'type': 'text',
              'timestamp': FieldValue.serverTimestamp(),
-          });
-        }
-        
-        return doc.id;
+        });
       }
+      
+      // 4. CẬP NHẬT TÊN SẢN PHẨM MỚI NHẤT VÀO PHÒNG CHAT (Để đồng bộ với nút Thanh toán)
+      await _firestore.collection('chats').doc(chatRoomId).update({
+        'lastMessage': isOffer ? 'Đề xuất giá: $productName' : 'Hỏi mua: $productName',
+        'productName': productName, // <-- Cập nhật lại sản phẩm đang giao dịch hiện tại
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+      
+      return chatRoomId;
     } catch (e) {
       return "";
     }
@@ -93,7 +105,8 @@ class FirebaseChatService {
         final data = json.decode(await response.stream.bytesToString());
         return data['data']['url'];
       }
-    } catch (e) { 
+    } catch (e) { print("Lỗi upload ảnh lên ImgBB: $e");
+
     }
     return null;
   }
@@ -125,7 +138,7 @@ class FirebaseChatService {
       }
 
       await _firestore.collection('chats').doc(chatRoomId).delete();
-    } catch (e) {
+    } catch (e) {print("Lỗi khi xóa phòng chat: $e");
     }
   }
 }
