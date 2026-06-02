@@ -142,9 +142,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     });
 
     try {
-      // ========================================================
-      // 1. KỸ SƯ TẢI ẢNH LÊN CLOUDINARY TRƯỚC
-      // ========================================================
       String? cloudinaryUrl = await CloudinaryService().uploadImage(
         _pickedImage!,
         type: ImageUploadType.product, // Khai báo rõ đây là ảnh sản phẩm
@@ -162,9 +159,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         }
         return;
       }
-      // ========================================================
-
-      // 2. Gom toàn bộ data thông số động
       Map<String, dynamic> specificationsMap = {};
       _dynamicControllers.forEach((fieldName, controller) {
         specificationsMap[fieldName] = controller.text.trim();
@@ -241,7 +235,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // --- SECTION HÌNH ẢNH ---
                     const Text(
                       'Hình ảnh sản phẩm',
                       style: TextStyle(
@@ -291,7 +284,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // --- SECTION THÔNG TIN CƠ BẢN ---
                     _buildTextField(
                       controller: _nameController,
                       label: 'Tên sản phẩm',
@@ -315,7 +307,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // --- DROPDOWN DANH MỤC LẤY ĐỘNG TỪ FIREBASE ---
                     const Text(
                       'Danh mục sản phẩm',
                       style: TextStyle(
@@ -335,7 +326,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                         child: DropdownButton<String>(
                           value: _selectedCategory,
                           isExpanded: true,
-                          // MAP DANH SÁCH DROPDOWN TỪ FIREBASE ĐỔ VỀ
                           items: _firebaseCategories.map((cat) {
                             String name = cat['name'] ?? 'Unknown';
                             return DropdownMenuItem<String>(
@@ -347,7 +337,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                             if (newValue != null) {
                               setState(() {
                                 _selectedCategory = newValue;
-                                // Đổi danh mục -> Tính toán lại và sinh bộ controller mới từ mảng Firebase
                                 _initDynamicFields();
                               });
                             }
@@ -357,10 +346,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // --- SECTION THUỘC TÍNH ĐỘNG ---
                     _buildDynamicFieldsSection(),
-
-                    // --- SECTION THÔNG TIN KHÁC ---
                     _buildTextField(
                       controller: _locationController,
                       label: 'Địa chỉ nơi bán',
@@ -380,7 +366,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                     ),
                     const SizedBox(height: 32),
 
-                    // --- NÚT ĐĂNG ---
                     SizedBox(
                       width: double.infinity,
                       height: 50,
@@ -410,7 +395,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   }
 
   Widget _buildDynamicFieldsSection() {
-    // Gọi hàm bốc mảng String từ data Firebase của category hiện tại
     final fields = _getCurrentFields();
     if (fields.isEmpty) return const SizedBox.shrink();
 
@@ -448,7 +432,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             itemBuilder: (context, index) {
               String fieldName = fields[index];
               return _buildTextField(
-                // Bốc đúng controller động tương ứng với tên trường từ Firebase
                 controller: _dynamicControllers[fieldName]!,
                 label: fieldName,
                 hint: 'Nhập $fieldName...',

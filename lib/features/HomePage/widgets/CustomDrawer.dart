@@ -4,8 +4,6 @@ import 'package:project_flutter/features/login-register/screens/login_screen.dar
 import 'package:project_flutter/features/HomePage/screens/edit_profile_screen.dart';
 // KỸ SƯ IMPORT THÊM MÀN HÌNH SAVED POSTS VÀO ĐÂY:
 import 'package:project_flutter/features/HomePage/screens/SavedPostsScreen.dart';
-import 'package:project_flutter/features/HomePage/screens/UserProfile.dart';
-import 'package:project_flutter/shared/models/user_profile.dart';
 
 class CustomDrawer extends StatelessWidget {
   const CustomDrawer({super.key});
@@ -40,21 +38,10 @@ class CustomDrawer extends StatelessWidget {
                   GestureDetector(
                     onTap: () {
                       Navigator.pop(context);
-                      // Điều hướng đến UserProfile screen
-                      final user = FirebaseAuth.instance.currentUser;
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ProfileScreen(
-                            userProfile: UserProfile(
-                              uid: user?.uid ?? '',
-                              displayName: user?.displayName,
-                              email: user?.email,
-                              avatarUrl: user?.photoURL,
-                            ),
-                          ),
-                        ),
-                      );
+                      // TODO: Điều hướng đến UserProfile screen ở đây
+                      // Navigator.push(context, MaterialPageRoute(
+                      //   builder: (_) => UserProfileScreen(userId: user?.uid ?? ''),
+                      // ));
                     },
                     child: CircleAvatar(
                       radius: 28,
@@ -83,21 +70,7 @@ class CustomDrawer extends StatelessWidget {
                     child: GestureDetector(
                       onTap: () {
                         Navigator.pop(context);
-                        // Điều hướng đến UserProfile screen
-                        final user = FirebaseAuth.instance.currentUser;
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ProfileScreen(
-                              userProfile: UserProfile(
-                                uid: user?.uid ?? '',
-                                displayName: user?.displayName,
-                                email: user?.email,
-                                avatarUrl: user?.photoURL,
-                              ),
-                            ),
-                          ),
-                        );
+                        // TODO: Điều hướng đến UserProfile screen
                       },
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -193,10 +166,6 @@ class CustomDrawer extends StatelessWidget {
 
             const Divider(height: 1, indent: 16, endIndent: 16),
             _buildSectionLabel('Khám phá'),
-
-            // ========================================================
-            // KỸ SƯ ĐÃ NỐI ỐNG ĐIỀU HƯỚNG BÀI VIẾT ĐÃ LƯU
-            // ========================================================
             _buildDrawerItem(
               icon: Icons.bookmark_border,
               title: 'Bài viết đã lưu',

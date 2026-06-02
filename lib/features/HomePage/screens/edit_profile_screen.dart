@@ -132,19 +132,16 @@ class _BasicInfoTabState extends State<_BasicInfoTab> {
   String? _selectedWardName;
   bool _isAddressLoading = true;
 
-  // ── Danh mục từ Firebase (thay vì hardcode) ──
   List<Map<String, dynamic>> _firebaseCategories = [];
   bool _isCategoriesLoading = true;
   final Set<String> _selectedInterests = {};
-  
+
   final FirestoreService _firestoreService = FirestoreService();
 
-  // Avatar
   File? _pickedAvatar;
   String? _currentAvatarUrl;
   bool _isUploadingAvatar = false;
 
-  // Dùng để match lại dropdown sau khi load JSON xong
   String? _savedProvinceName;
   String? _savedWardName;
 
@@ -269,8 +266,7 @@ class _BasicInfoTabState extends State<_BasicInfoTab> {
   // ── Load danh mục từ Firebase (giống CreatePost) ──
   Future<void> _loadCategoriesFromFirebase() async {
     try {
-      List<Map<String, dynamic>> cats =
-          await _firestoreService.getCategories();
+      List<Map<String, dynamic>> cats = await _firestoreService.getCategories();
       setState(() {
         _firebaseCategories = cats;
         _isCategoriesLoading = false;
@@ -650,56 +646,62 @@ class _BasicInfoTabState extends State<_BasicInfoTab> {
                     ),
                   )
                 : _firebaseCategories.isEmpty
-                    ? Center(
-                        child: Text(
-                          'Chưa có danh mục nào',
-                          style: TextStyle(
-                            color: Colors.grey.shade500,
-                            fontSize: 13,
+                ? Center(
+                    child: Text(
+                      'Chưa có danh mục nào',
+                      style: TextStyle(
+                        color: Colors.grey.shade500,
+                        fontSize: 13,
+                      ),
+                    ),
+                  )
+                : Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _firebaseCategories.map((cat) {
+                      final categoryName = cat['name'] as String? ?? '';
+                      final selected = _selectedInterests.contains(
+                        categoryName,
+                      );
+                      return GestureDetector(
+                        onTap: () => setState(() {
+                          if (selected) {
+                            _selectedInterests.remove(categoryName);
+                          } else {
+                            _selectedInterests.add(categoryName);
+                          }
+                        }),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: selected ? primaryTeal : Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: selected
+                                  ? primaryTeal
+                                  : Colors.grey.shade300,
+                            ),
+                          ),
+                          child: Text(
+                            categoryName,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: selected
+                                  ? Colors.white
+                                  : Colors.grey.shade700,
+                              fontWeight: selected
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
+                            ),
                           ),
                         ),
-                      )
-                    : Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: _firebaseCategories.map((cat) {
-                          final categoryName = cat['name'] as String? ?? '';
-                          final selected = _selectedInterests.contains(categoryName);
-                          return GestureDetector(
-                            onTap: () => setState(() {
-                              if (selected) {
-                                _selectedInterests.remove(categoryName);
-                              } else {
-                                _selectedInterests.add(categoryName);
-                              }
-                            }),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 150),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                color: selected ? primaryTeal : Colors.white,
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: selected ? primaryTeal : Colors.grey.shade300,
-                                ),
-                              ),
-                              child: Text(
-                                categoryName,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: selected ? Colors.white : Colors.grey.shade700,
-                                  fontWeight: selected
-                                      ? FontWeight.w600
-                                      : FontWeight.normal,
-                                ),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
+                      );
+                    }).toList(),
+                  ),
             const SizedBox(height: 36),
 
             // ── Nút lưu ──

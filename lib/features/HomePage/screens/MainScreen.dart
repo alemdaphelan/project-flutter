@@ -151,7 +151,7 @@ class _MainScreenState extends State<MainScreen> {
                 .snapshots(),
             builder: (context, snapshot) {
               String? avatarUrl = widget.user.photoURL;
-              
+
               if (snapshot.hasData && snapshot.data?.exists == true) {
                 final userData = snapshot.data!.data() as Map?;
                 avatarUrl = userData?['avatarUrl'] as String?;
@@ -301,14 +301,13 @@ class _MainScreenState extends State<MainScreen> {
           ),
           BottomNavigationBarItem(
             icon: StreamBuilder<QuerySnapshot>(
-              // BƯỚC ĐI KỸ SƯ: Mở đường ống Stream hứng data liên tục từ Firebase
               stream: firestore.getNotificationsStream(widget.user.uid),
               builder: (context, snapshot) {
                 int unreadCount = 0;
 
                 // Nếu có data trả về từ mây
                 if (snapshot.hasData) {
-                  // Đếm xem có bao nhiêu cái thông báo mang mác "chưa đọc" (isRead == false)
+                  // Đếm xem có bao nhiêu cái thông báo mang mác "chưa đọc"
                   unreadCount = snapshot.data!.docs.where((doc) {
                     final data = doc.data() as Map<String, dynamic>;
                     return data['isRead'] == false;
@@ -336,7 +335,6 @@ class _MainScreenState extends State<MainScreen> {
                             minHeight: 16,
                           ),
                           child: Text(
-                            // UX Hàng hiệu: Nhiều quá thì hiện 99+ cho khỏi bể giao diện
                             unreadCount > 99 ? '99+' : '$unreadCount',
                             style: const TextStyle(
                               color: Colors.white,

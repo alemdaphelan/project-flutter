@@ -105,6 +105,7 @@ class _SavedPostsScreenState extends State<SavedPostsScreen> {
       var snapshot = await FirebaseFirestore.instance
           .collection('listings')
           .where(FieldPath.documentId, whereIn: chunk)
+          .orderBy('time', descending: true)
           .get();
 
       for (var doc in snapshot.docs) {
@@ -115,6 +116,7 @@ class _SavedPostsScreenState extends State<SavedPostsScreen> {
         }
       }
     }
+    products.sort((a, b) => b.time.compareTo(a.time));
     return products;
   }
 
